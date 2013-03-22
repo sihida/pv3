@@ -1,0 +1,38 @@
+wp (SETLOCAL k x)  Q = Q[x/loc_k]
+  {loc_k := x}
+wp (LOADLOCAL k)   Q = (Q[loc_k/stack_T])[(T+1)/T]
+  {T := T+1; stack_T := loc_k}
+wp (STORELOCAL k)  Q = (Q[(T-1)/T])[loc_k/stack_(T-1)] && T >= 0
+  {loc_k := stack_T; T := T-1}
+wp (LOADPARAM k)   Q = (Q[param_k/stack_T])[(T+1)/T]
+  {T := T+1; stack_T := param_k}
+wp (STOREPARAM k)  Q = (Q[(T-1)/T])[param_k/stack_(T-1)] && T >= 0
+  {param_k := stack_T; T := T-1}
+wp (PUSHLITERAL l) Q = (Q[l/stack_T])[(T+1)/T]
+  {T := T+1; stack_T := l}
+wp (POP)           Q = Q[T-1/T] && T >= 0
+  {T := T-1}
+wp (ADD)           Q = (Q[(T-1)/T])[(stack_(T-1) + stack_T)/stack_(T-1)] && T >= 1
+  {stack_(T-1) := stack_(T-1) + stack_T; T := T-1}
+wp (MIN)           Q = (Q[(T-1)/T])[(stack_(T-1) - stack_T)/stack_(T-1)] && T >= 1
+  {stack_(T-1) := stack_(T-1) - stack_T; T := T-1}
+wp (MUL)           Q = (Q[(T-1)/T])[(stack_(T-1) * stack_T)/stack_(T-1)] && T >= 1
+  {stack_(T-1) := stack_(T-1) * stack_T; T := T-1}
+wp (EQ)            Q = (Q[(T-1)/T])[(stack_(T-1) == stack_T)/stack_(T-1)] && T >= 1
+  {stack_(T-1) := stack_(T-1) == stack_T; T := T-1}
+wp (LT)            Q = (Q[(T-1)/T])[(stack_(T-1) < stack_T)/stack_(T-1)] && T >= 1
+  {stack_(T-1) := stack_(T-1) < stack_T; T := T-1}
+wp (LTE)           Q = (Q[(T-1)/T])[(stack_(T-1) <= stack_T)/stack_(T-1)] && T >= 1
+  {stack_(T-1) := stack_(T-1) <= stack_T; T := T-1}
+wp (GT)            Q = (Q[(T-1)/T])[(stack_(T-1) > stack_T)/stack_(T-1)] && T >= 1
+  {stack_(T-1) := stack_(T-1) > stack_T; T := T-1}
+wp (GTE)           Q = (Q[(T-1)/T])[(stack_(T-1) >= stack_T)/stack_(T-1)] && T >= 1
+  {stack_(T-1) := stack_(T-1) >= stack_T; T := T-1}
+wp (return)        Q = (Q[T-1/T])[stack_T/return] && T >= 0
+  {return := stack_T; T := T-1}
+
+wp ([s_1, s_2, ..., s_n]) Q = wp s_1 (wp s_2 (... (wp s_n Q)))
+
+wp (iftrue s1 else s2) Q = (((wp s1 Q)[T-1/T] && stack_T) || ((wp s2 Q)[T-1/T] && !stack_T)) && T >= 0
+
+wp (P (n) s) Q = ((wp s (Q && T == -1))[a_0/param_0][a_1/param_1]...[a_(n-1)/param_(n-1)])[-1/T]
