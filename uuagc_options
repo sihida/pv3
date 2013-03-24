@@ -1,0 +1,8 @@
+file : "src/PV3/Condition/AG.ag"
+options : haskellsyntax, data, catas, semfuns, wrappers, signatures
+
+file : "src/PV3/WP.ag"
+options : haskellsyntax, data, catas, semfuns, wrappers, signatures
+
+file : "src/PV3/Program/ProgramAST.ag"
+options : haskellsyntax, data

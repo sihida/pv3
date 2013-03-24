@@ -1,0 +1,30 @@
+type StatementList = [Statement]
+
+data Program     
+  | Program         nParams    :: Int            nLocals     :: Int           body :: StatementList
+  
+data Statement   
+  | SInstruction    instr      :: Instruction
+  | SIfTrueElse     trueBranch :: StatementList  falseBranch :: StatementList
+               
+data Instruction 
+  | InstSetLocal    index      :: Int            lit :: Literal
+  | InstLoadLocal   index      :: Int
+  | InstStoreLocal  index      :: Int
+  | InstLoadParam   index      :: Int
+  | InstStoreParam  index      :: Int
+  | InstPushLiteral lit        :: Literal
+  | InstPop
+  | InstAdd
+  | InstMin
+  | InstMul
+  | InstLT
+  | InstLTE
+  | InstGT
+  | InstGTE
+  | InstEQ
+  | Instreturn  
+
+data Literal     
+  | LBool           b          :: Bool
+  | LInt            i          :: Int                

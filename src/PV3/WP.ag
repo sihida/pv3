@@ -1,0 +1,74 @@
+module {PV3.WP}
+{}
+{
+import PV3.Condition.AG
+}
+
+include "Program/ProgramAST.ag" 
+
+attr Program Statement Instruction StatementList
+  inh wp :: Cond
+  syn wp :: Cond
+
+attr Literal
+  syn copy :: self
+    
+sem Program
+  | Program  body.wp = CAnd @lhs.wp (CEQ (ITopStackIndex 0) (ILit (-1)))
+             lhs.wp  = replace (replaceParamWithOld @nParams @body.wp) Nothing (Just (ITopStackIndex 0, ILit (-1)))
+  
+sem Statement
+  | SIfTrueElse  lhs.wp         = CAnd (CGTE (ITopStackIndex 0) (ILit 0))
+                                       (COr (CAnd (CStack (ITopStackIndex 0))        (replace @trueBranch.wp  Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))))
+                                            (CAnd (CNot (CStack (ITopStackIndex 0))) (replace @falseBranch.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1))))))
+                 falseBranch.wp = @lhs.wp
+
+sem Instruction
+  | InstSetLocal     lhs.wp = case @lit.copy of
+                                (LBool b) -> replace @lhs.wp (Just (CLocal @index, CLit b)) Nothing
+                                (LInt  i) -> replace @lhs.wp Nothing (Just (ILocal @index, ILit i))       
+  | InstLoadLocal    lhs.wp = let first = replace @lhs.wp (Just (CStack (ITopStackIndex 0), CLocal @index)) (Just (IStack (ITopStackIndex 0), ILocal @index))
+                              in  replace first Nothing (Just (ITopStackIndex 0, ITopStackIndex 1))
+  | InstStoreLocal   lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
+                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 0)) (replace first (Just (CStack (ITopStackIndex (-1)), CLocal @index)) (Just (IStack (ITopStackIndex (-1)), ILocal @index)))
+  | InstLoadParam    lhs.wp = let first = replace @lhs.wp (Just (CStack (ITopStackIndex 0), CParamCurr @index)) (Just (IStack (ITopStackIndex 0), IParamCurr @index))
+                              in  replace first Nothing (Just (ITopStackIndex 0, ITopStackIndex 1))
+  | InstStoreParam   lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
+                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 0)) (replace first (Just (CStack (ITopStackIndex (-1)), CParamCurr @index)) (Just (IStack (ITopStackIndex (-1)), IParamCurr @index)))                   
+  | InstPushLiteral  lhs.wp = let first = case @lit.copy of
+                                           (LBool b) -> replace @lhs.wp (Just (CStack (ITopStackIndex 0), CLit b)) Nothing 
+                                           (LInt  i) -> replace @lhs.wp Nothing (Just (IStack (ITopStackIndex 0), ILit i)) 
+                              in  replace first Nothing (Just (ITopStackIndex 0, ITopStackIndex 1))
+  | InstPop          lhs.wp = CAnd (CGTE (ITopStackIndex 0) (ILit 0)) (replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1))))
+  | InstAdd          lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
+                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first Nothing (Just (IStack (ITopStackIndex (-1)), IAdd (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))))   
+  | InstMin          lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
+                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first Nothing (Just (IStack (ITopStackIndex (-1)), ISub (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))))   
+  | InstMul          lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
+                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first Nothing (Just (IStack (ITopStackIndex (-1)), IMul (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))))   
+  | InstLT           lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
+                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first (Just (CStack (ITopStackIndex (-1)), CLT (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))) Nothing)                         
+  | InstLTE          lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
+                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first (Just (CStack (ITopStackIndex (-1)), CLTE (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))) Nothing)  
+  | InstGT           lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
+                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first (Just (CStack (ITopStackIndex (-1)), CGT (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))) Nothing)  
+  | InstGTE          lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
+                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first (Just (CStack (ITopStackIndex (-1)), CGTE (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))) Nothing)  
+  | InstEQ           lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
+                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first (Just (CStack (ITopStackIndex (-1)), CEQ (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))) Nothing)  
+  | Instreturn       lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
+                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 0)) (replace first (Just (CReturnValue, CStack (ITopStackIndex 0))) (Just (IReturnValue, IStack (ITopStackIndex 0))))                     
+
+sem StatementList
+  | Cons   tl.wp  = @lhs.wp
+           hd.wp  = @tl.wp                         
+           lhs.wp = @hd.wp
+
+{
+replaceParamWithOld :: Int -> Cond -> Cond
+replaceParamWithOld 0 c = c
+replaceParamWithOld n c = replaceParamWithOld (n-1) (replace c (Just (CParamCurr (n-1), CParamOld (ILit (n-1)))) (Just (IParamCurr (n-1), IParamOld (ILit (n-1)))))
+
+replace :: Cond -> Maybe (Cond, Cond) -> Maybe (IExpr, IExpr) -> Cond
+replace c toReplaceWithC toReplaceWithI = copy_Syn_Cond $ wrap_Cond (sem_Cond c) (Inh_Cond {toReplaceWithC_Inh_Cond=toReplaceWithC, toReplaceWithI_Inh_Cond=toReplaceWithI})
+}

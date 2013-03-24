@@ -1,0 +1,38 @@
+{
+import Data.Maybe
+}
+
+attr Cond IExpr
+  inh   toReplaceWithC :: {Maybe (Cond,  Cond)}
+  inh   toReplaceWithI :: {Maybe (IExpr, IExpr)}
+  syn   copy           :: self
+  
+sem Cond
+  | *                   lhs.copy = if   isJust @lhs.toReplaceWithC 
+                                   then let (Just (toReplace, replaceWith)) = @lhs.toReplaceWithC
+                                        in  if   @copy == toReplace 
+                                            then replaceWith 
+                                            else @copy
+                                   else @copy
+
+sem IExpr
+  | ITopStackIndex      lhs.copy = if   isJust @lhs.toReplaceWithI 
+                                   then let (Just (toReplace, replaceWith)) = @lhs.toReplaceWithI
+                                        in  if   isTopStackIndex toReplace
+                                            then if   isTopStackIndex replaceWith
+                                                 then let (ITopStackIndex offset') = replaceWith in ITopStackIndex (@offset + offset')
+                                                 else IAdd replaceWith (ILit @offset)
+                                            else @copy
+                                   else @copy
+  | * - ITopStackIndex  lhs.copy = if   isJust @lhs.toReplaceWithI 
+                                   then let (Just (toReplace, replaceWith)) = @lhs.toReplaceWithI
+                                        in  if   @copy == toReplace 
+                                            then replaceWith 
+                                            else @copy
+                                   else @copy
+                  
+{
+isTopStackIndex :: IExpr -> Bool
+isTopStackIndex (ITopStackIndex _) = True
+isTopStackIndex _                  = False
+}

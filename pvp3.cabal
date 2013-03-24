@@ -1,0 +1,24 @@
+name:                  pvp3
+version:               1.0.0
+synopsis:              Bytecode Verification Engine 
+description:           Submission for the Project 3 of the course on
+                       Program Verification at Utrecht University.
+category:              Verification
+copyright:             2013 Utrecht University
+author:                Jaap van der Plas, Danny Bergsma
+stability:             doubtful
+homepage:              http://www.cs.uu.nl/docs/vakken/pv/1213/stuffs/PV_P3_1213.pdf
+tested-with:           GHC == 7.4.1
+build-type:            Custom
+cabal-version:         >= 1.8
+extra-source-files:    AUTHORS, README.md, uuagc_options,
+                       src/PV3/Condition/ConditionAST.ag, src/PV3/Condition/Replace.ag, src/PV3/Condition/AG.ag
+                       src/PV3/Program/ProgramAST.ag
+                       src/PV3/WP.ag, src/PV3/Program/Verification.hs
+                       src/PV3/Examples/Assignment.hs, src/PV3/Examples/Simple.hs
+
+executable verify
+  main-is:             Main.hs
+  build-depends:       base, cco >= 0.0.4, uuagc >= 0.9.40.3, uuagc-cabal >= 1.0.3.0
+  other-modules:       PV3.WP, PV3.Examples.Assignment, PV3.Condition.AG, PV3.Program.ProgramAST, PV3.Verification
+  hs-source-dirs:      src

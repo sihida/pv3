@@ -1,0 +1,44 @@
+data Cond  -- could also be named BExpr
+  | CAnd           c1          :: Cond      c2          :: Cond   -- c1 && c2
+  | COr            c1          :: Cond      c2          :: Cond   -- c1 || c2
+  | CNot           c           :: Cond                            -- !c
+  | CImplies       cAntecedent :: Cond      cConsequent :: Cond   -- cAntecdent ==> cConsequent
+  | CEquiv         c1          :: Cond      c2          :: Cond   -- c1 <==> c2
+  | CEQ            i1          :: IExpr     i2          :: IExpr  -- i1 == i2
+  | CNEQ           i1          :: IExpr     i2          :: IExpr  -- i1 /= i2
+  | CLT            i1          :: IExpr     i2          :: IExpr  -- i1 < i2
+  | CLTE           i1          :: IExpr     i2          :: IExpr  -- i1 <= i2  
+  | CGT            i1          :: IExpr     i2          :: IExpr  -- i1 > i2
+  | CGTE           i1          :: IExpr     i2          :: IExpr  -- i1 >= i2
+  | CUnivQuant     varName     :: {String}  c           :: Cond   -- A varName : c
+  | CExistQuant    varName     :: {String}  c           :: Cond   -- E varName : c 
+  | CParamOld      i           :: IExpr                           -- a_i
+  | CReturnValue                                                  -- return
+  | CLit           b           :: Bool                            -- b (true/false)
+  
+  -- pre- and postconditions should not refer to these internals:
+  | CLocal         index       :: Int                             -- loc_index
+  | CParamCurr     index       :: Int                             -- param_index
+  | CStack         index       :: IExpr                           -- stack_(T+offset)
+
+deriving Cond : Eq
+deriving Cond : Show
+  
+data IExpr 
+  | IAdd           i1          :: IExpr     i2          :: IExpr  -- i1+i2
+  | ISub           i1          :: IExpr     i2          :: IExpr  -- i1-i2
+  | IMul           i1          :: IExpr     i2          :: IExpr  -- i1*i2
+  | IDiv           i1          :: IExpr     i2          :: IExpr  -- i1/i2
+  | IParamOld      i           :: IExpr                           -- a_i
+  | IReturnValue                                                  -- return
+  | ILit           i           :: Int                             -- i (..., -1, 0, 1, ...)
+  | IVarName                                                      -- x, y, ... (universal/existential quantified)
+  
+  -- pre- and postconditions should not refer to these internals:
+  | ILocal         index       :: Int                             -- loc_index
+  | IParamCurr     index       :: Int                             -- param_index
+  | IStack         index       :: IExpr                           -- stack_(T+offset)
+  | ITopStackIndex offset      :: Int                             -- T+offset
+  
+deriving IExpr : Eq
+deriving IExpr : Show
