@@ -1,7 +1,7 @@
 module PV3.Examples.Assignment where
 
 import PV3.WP
-import PV3.Condition.AG
+import PV3.Condition.ConditionAST
 
 body :: StatementList
 body = [SInstruction (InstSetLocal  0 (LInt 10)),
@@ -17,7 +17,7 @@ program :: Program
 program = Program 2 1 body
                        
 postcondition :: Cond
-postcondition = CEquiv (CEQ (IAdd (IParamOld (ILit 0)) (IParamOld (ILit 1)))
+postcondition = CEquiv (CEQ (IAdd (IParamOld 0) (IParamOld 1))
                             (ILit 10))
                        (CEQ IReturnValue
                             (ILit 1))        

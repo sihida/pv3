@@ -1,5 +1,10 @@
+module {PV3.Condition.Replace}{}{}
+
+include "ConditionAST.ag"
+
 {
 import Data.Maybe
+import PV3.Condition.ConditionAST
 }
 
 attr Cond IExpr

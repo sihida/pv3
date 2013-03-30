@@ -1,0 +1,51 @@
+module {PV3.Condition.ConvertToSBV}{}{}
+
+include "ConditionAST.ag"
+
+{
+import PV3.Condition.ConditionAST
+
+import Control.Monad
+import Data.Map
+import Data.SBV
+}
+
+attr Cond
+  syn symCond  :: {Map String SBool -> Map String SInteger -> Symbolic SBool}
+  
+attr IExpr
+  syn symIExpr :: {Map String SBool -> Map String SInteger -> Symbolic SInteger}
+  
+sem Cond
+  | CAnd          lhs.symCond = (\m1 m2 -> liftM2 (&&&) (@c1.symCond  m1 m2) (@c2.symCond  m1 m2))
+  | COr           lhs.symCond = (\m1 m2 -> liftM2 (|||) (@c1.symCond  m1 m2) (@c2.symCond  m1 m2))
+  | CNot          lhs.symCond = (\m1 m2 -> liftM  bnot  (@c.symCond   m1 m2))
+  | CImplies      lhs.symCond = (\m1 m2 -> liftM2 (==>) (@c1.symCond  m1 m2) (@c2.symCond  m1 m2))
+  | CEquiv        lhs.symCond = (\m1 m2 -> liftM2 (<=>) (@c1.symCond  m1 m2) (@c2.symCond  m1 m2))
+  | CEQ           lhs.symCond = (\m1 m2 -> liftM2 (.==) (@i1.symIExpr m1 m2) (@i2.symIExpr m1 m2))
+  | CNEQ          lhs.symCond = (\m1 m2 -> liftM2 (./=) (@i1.symIExpr m1 m2) (@i2.symIExpr m1 m2))
+  | CLT           lhs.symCond = (\m1 m2 -> liftM2 (.<)  (@i1.symIExpr m1 m2) (@i2.symIExpr m1 m2))
+  | CLTE          lhs.symCond = (\m1 m2 -> liftM2 (.<=) (@i1.symIExpr m1 m2) (@i2.symIExpr m1 m2))
+  | CGT           lhs.symCond = (\m1 m2 -> liftM2 (.>)  (@i1.symIExpr m1 m2) (@i2.symIExpr m1 m2))
+  | CGTE          lhs.symCond = (\m1 m2 -> liftM2 (.>=) (@i1.symIExpr m1 m2) (@i2.symIExpr m1 m2))
+  | CUnivQuant    lhs.symCond = quant forall @varName @c.symCond   
+  | CExistQuant   lhs.symCond = quant exists @varName @c.symCond  
+  | CParamOld     lhs.symCond = (\m1 _ -> return (m1 ! ("a" ++ show @index)))
+  | CReturnValue  lhs.symCond = (\m1 _ -> return (m1 ! "return"))
+  | CLit          lhs.symCond = (\_  _ -> return (literal @b))
+  
+sem IExpr
+  | IAdd          lhs.symIExpr = (\m1 m2 -> liftM2 (+)  (@i1.symIExpr m1 m2) (@i2.symIExpr m1 m2))
+  | ISub          lhs.symIExpr = (\m1 m2 -> liftM2 (-)  (@i1.symIExpr m1 m2) (@i2.symIExpr m1 m2))
+  | IMul          lhs.symIExpr = (\m1 m2 -> liftM2 (*)  (@i1.symIExpr m1 m2) (@i2.symIExpr m1 m2))
+  | IDiv          lhs.symIExpr = (\m1 m2 -> liftM2 sDiv (@i1.symIExpr m1 m2) (@i2.symIExpr m1 m2))
+  | IParamOld     lhs.symIExpr = (\_  m2 -> return (m2 ! ("a" ++ show @index)))
+  | IReturnValue  lhs.symIExpr = (\_  m2 -> return (m2 ! "return"))
+  | ILit          lhs.symIExpr = (\_  _  -> return (literal @i))
+  | IVarName      lhs.symIExpr = (\_  m2 -> return (m2 ! @varName))
+  
+{
+quant :: (String -> Symbolic (SBV Integer)) -> String -> (Map String SBool -> Map String SInteger -> Symbolic SBool) -> Map String SBool -> Map String SInteger -> Symbolic SBool
+quant q v c m1 m2 = do x <- q v
+                       c m1 (insert v x m2)
+}

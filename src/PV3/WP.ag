@@ -1,7 +1,8 @@
 module {PV3.WP}
 {}
 {
-import PV3.Condition.AG
+import PV3.Condition.ConditionAST
+import PV3.Condition.Replace
 }
 
 include "Program/ProgramAST.ag" 
@@ -40,22 +41,16 @@ sem Instruction
                                            (LInt  i) -> replace @lhs.wp Nothing (Just (IStack (ITopStackIndex 0), ILit i)) 
                               in  replace first Nothing (Just (ITopStackIndex 0, ITopStackIndex 1))
   | InstPop          lhs.wp = CAnd (CGTE (ITopStackIndex 0) (ILit 0)) (replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1))))
-  | InstAdd          lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
-                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first Nothing (Just (IStack (ITopStackIndex (-1)), IAdd (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))))   
-  | InstMin          lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
-                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first Nothing (Just (IStack (ITopStackIndex (-1)), ISub (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))))   
-  | InstMul          lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
-                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first Nothing (Just (IStack (ITopStackIndex (-1)), IMul (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))))   
-  | InstLT           lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
-                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first (Just (CStack (ITopStackIndex (-1)), CLT (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))) Nothing)                         
-  | InstLTE          lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
-                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first (Just (CStack (ITopStackIndex (-1)), CLTE (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))) Nothing)  
-  | InstGT           lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
-                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first (Just (CStack (ITopStackIndex (-1)), CGT (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))) Nothing)  
-  | InstGTE          lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
-                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first (Just (CStack (ITopStackIndex (-1)), CGTE (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))) Nothing)  
-  | InstEQ           lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
-                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first (Just (CStack (ITopStackIndex (-1)), CEQ (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))) Nothing)  
+  | InstAdd          lhs.wp = binaryOpI @lhs.wp IAdd   
+  | InstMin          lhs.wp = binaryOpI @lhs.wp ISub
+  | InstMul          lhs.wp = binaryOpI @lhs.wp IMul 
+  | InstLT           lhs.wp = binaryOpB @lhs.wp CLT  
+  | InstLTE          lhs.wp = binaryOpB @lhs.wp CLTE 
+  | InstGT           lhs.wp = binaryOpB @lhs.wp CGT
+  | InstGTE          lhs.wp = binaryOpB @lhs.wp CGTE 
+  | InstEQ           lhs.wp = binaryOpB @lhs.wp CEQ   
+  | InstEquiv        lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
+                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first (Just (CStack (ITopStackIndex (-1)), CEquiv (CStack (ITopStackIndex (-1))) (CStack (ITopStackIndex 0)))) Nothing)
   | Instreturn       lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
                               in  CAnd (CGTE (ITopStackIndex 0) (ILit 0)) (replace first (Just (CReturnValue, CStack (ITopStackIndex 0))) (Just (IReturnValue, IStack (ITopStackIndex 0))))                     
 
@@ -65,10 +60,18 @@ sem StatementList
            lhs.wp = @hd.wp
 
 {
-replaceParamWithOld :: Int -> Cond -> Cond
+replaceParamWithOld :: Integer -> Cond -> Cond
 replaceParamWithOld 0 c = c
-replaceParamWithOld n c = replaceParamWithOld (n-1) (replace c (Just (CParamCurr (n-1), CParamOld (ILit (n-1)))) (Just (IParamCurr (n-1), IParamOld (ILit (n-1)))))
+replaceParamWithOld n c = replaceParamWithOld (n-1) (replace c (Just (CParamCurr (n-1), CParamOld (n-1))) (Just (IParamCurr (n-1), IParamOld (n-1))))
 
 replace :: Cond -> Maybe (Cond, Cond) -> Maybe (IExpr, IExpr) -> Cond
 replace c toReplaceWithC toReplaceWithI = copy_Syn_Cond $ wrap_Cond (sem_Cond c) (Inh_Cond {toReplaceWithC_Inh_Cond=toReplaceWithC, toReplaceWithI_Inh_Cond=toReplaceWithI})
+
+binaryOpI :: Cond -> (IExpr -> IExpr -> IExpr) -> Cond
+binaryOpI c op = let first = replace c Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
+                 in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first Nothing (Just (IStack (ITopStackIndex (-1)), op (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))))
+
+binaryOpB :: Cond -> (IExpr -> IExpr -> Cond) -> Cond                 
+binaryOpB c op = let first = replace c Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
+                 in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first (Just (CStack (ITopStackIndex (-1)), op (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))) Nothing)
 }

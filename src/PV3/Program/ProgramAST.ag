@@ -1,18 +1,18 @@
 type StatementList = [Statement]
 
 data Program     
-  | Program         nParams    :: Int            nLocals     :: Int           body :: StatementList
+  | Program         nParams    :: Integer        nLocals     :: Integer        body :: StatementList
   
 data Statement   
   | SInstruction    instr      :: Instruction
   | SIfTrueElse     trueBranch :: StatementList  falseBranch :: StatementList
                
 data Instruction 
-  | InstSetLocal    index      :: Int            lit :: Literal
-  | InstLoadLocal   index      :: Int
-  | InstStoreLocal  index      :: Int
-  | InstLoadParam   index      :: Int
-  | InstStoreParam  index      :: Int
+  | InstSetLocal    index      :: Integer        lit :: Literal
+  | InstLoadLocal   index      :: Integer
+  | InstStoreLocal  index      :: Integer
+  | InstLoadParam   index      :: Integer
+  | InstStoreParam  index      :: Integer
   | InstPushLiteral lit        :: Literal
   | InstPop
   | InstAdd
@@ -23,8 +23,9 @@ data Instruction
   | InstGT
   | InstGTE
   | InstEQ
+  | InstEquiv  -- new instruction to compare two booleans
   | Instreturn  
 
 data Literal     
   | LBool           b          :: Bool
-  | LInt            i          :: Int                
+  | LInt            i          :: Integer               

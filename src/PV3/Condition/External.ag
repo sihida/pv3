@@ -1,0 +1,16 @@
+module {PV3.Condition.External}{}{}
+
+include "ConditionAST.ag"
+
+{
+import PV3.Condition.ConditionAST
+}
+
+attr Cond IExpr
+  syn external use {&&} {True} :: Bool
+  
+sem Cond
+  | CLocal CParamCurr CStack                 lhs.external = False
+  
+sem IExpr
+  | ILocal IParamCurr IStack ITopStackIndex  lhs.external = False

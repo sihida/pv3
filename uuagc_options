@@ -1,5 +1,14 @@
-file : "src/PV3/Condition/AG.ag"
-options : haskellsyntax, data, catas, semfuns, wrappers, signatures
+file : "src/PV3/Condition/ConditionAST.ag"
+options : haskellsyntax, data
+
+file : "src/PV3/Condition/ConvertToSBV.ag"
+options : haskellsyntax, catas, semfuns, wrappers, signatures
+
+file : "src/PV3/Condition/External.ag"
+options : haskellsyntax, catas, semfuns, wrappers, signatures
+
+file : "src/PV3/Condition/Replace.ag"
+options : haskellsyntax, catas, semfuns, wrappers, signatures
 
 file : "src/PV3/WP.ag"
 options : haskellsyntax, data, catas, semfuns, wrappers, signatures
