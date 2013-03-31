@@ -11,11 +11,16 @@ attr Program Statement Instruction StatementList
   inh wp :: Cond
   syn wp :: Cond
 
+attr Statement Instruction StatementList
+  inh wp' :: Cond
+  syn wp' :: Cond
+  
 attr Literal
   syn copy :: self
     
 sem Program
-  | Program  body.wp = CAnd @lhs.wp (CEQ (ITopStackIndex 0) (ILit (-1)))
+  | Program  loc.wp' = CAnd @lhs.wp (CEQ (ITopStackIndex 0) (ILit (-1)))
+             body.wp = @wp'
              lhs.wp  = replace (replaceParamWithOld @nParams @body.wp) Nothing (Just (ITopStackIndex 0, ILit (-1)))
   
 sem Statement
@@ -23,6 +28,7 @@ sem Statement
                                        (COr (CAnd (CStack (ITopStackIndex 0))        (replace @trueBranch.wp  Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))))
                                             (CAnd (CNot (CStack (ITopStackIndex 0))) (replace @falseBranch.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1))))))
                  falseBranch.wp = @lhs.wp
+                            .wp'= @lhs.wp'
 
 sem Instruction
   | InstSetLocal     lhs.wp = case @lit.copy of
@@ -51,14 +57,16 @@ sem Instruction
   | InstEQ           lhs.wp = binaryOpB @lhs.wp CEQ   
   | InstEquiv        lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
                               in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first (Just (CStack (ITopStackIndex (-1)), CEquiv (CStack (ITopStackIndex (-1))) (CStack (ITopStackIndex 0)))) Nothing)
-  | Instreturn       lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
+  | Instreturn       lhs.wp = let first = replace @lhs.wp' Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
                               in  CAnd (CGTE (ITopStackIndex 0) (ILit 0)) (replace first (Just (CReturnValue, CStack (ITopStackIndex 0))) (Just (IReturnValue, IStack (ITopStackIndex 0))))                     
 
 sem StatementList
   | Cons   tl.wp  = @lhs.wp
-           hd.wp  = @tl.wp                         
+             .wp' = @lhs.wp'
+           hd.wp  = @tl.wp  
+             .wp' = @tl.wp'           
            lhs.wp = @hd.wp
-
+              .wp'= @hd.wp'
 {
 replaceParamWithOld :: Integer -> Cond -> Cond
 replaceParamWithOld 0 c = c

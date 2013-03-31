@@ -1,4 +1,4 @@
-module PV3.Examples.Assignment where
+module PV3.Examples.ReturnFromAnywhere where
 
 import PV3.WP
 import PV3.Condition.ConditionAST
@@ -10,7 +10,8 @@ body = [SInstruction (InstSetLocal  0 (LInt 10)),
         SInstruction (InstAdd),
         SInstruction (InstLoadLocal 0),
         SInstruction (InstEQ),
-        SIfTrueElse  [SInstruction (InstPushLiteral (LInt 1))] [SInstruction (InstPushLiteral (LInt (-1)))],
+        SIfTrueElse  [SInstruction (InstPushLiteral (LInt 1)), SInstruction Instreturn] [SInstruction (InstPushLiteral (LInt (-1))), SInstruction Instreturn],
+        SInstruction (InstPushLiteral (LInt 1)),
         SInstruction (Instreturn)]
 
 program :: Program

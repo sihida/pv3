@@ -1,6 +1,6 @@
 module Main where
 
-import PV3.Examples.Assignment
+import PV3.Examples.ReturnFromAnywhere
 import PV3.Verification
 
 import Data.SBV
