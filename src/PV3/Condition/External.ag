@@ -1,10 +1,9 @@
-module {PV3.Condition.External}{}{}
-
-include "ConditionAST.ag"
-
+module {PV3.Condition.External}{}
 {
 import PV3.Condition.ConditionAST
 }
+
+include "ConditionAST.ag"
 
 attr Cond IExpr
   syn external use {&&} {True} :: Bool

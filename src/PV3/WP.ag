@@ -1,8 +1,8 @@
-module {PV3.WP}
-{}
+module {PV3.WP}{}
 {
 import PV3.Condition.ConditionAST
 import PV3.Condition.Replace
+import PV3.Program.ProgramAST
 }
 
 include "Program/ProgramAST.ag" 
@@ -24,11 +24,11 @@ sem Program
              lhs.wp  = replace (replaceParamWithOld @nParams @body.wp) Nothing (Just (ITopStackIndex 0, ILit (-1)))
   
 sem Statement
-  | SIfTrueElse  lhs.wp         = CAnd (CGTE (ITopStackIndex 0) (ILit 0))
-                                       (COr (CAnd (CStack (ITopStackIndex 0))        (replace @trueBranch.wp  Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))))
-                                            (CAnd (CNot (CStack (ITopStackIndex 0))) (replace @falseBranch.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1))))))
-                 falseBranch.wp = @lhs.wp
-                            .wp'= @lhs.wp'
+  | SIfTrueElse  lhs.wp          = CAnd (CGTE (ITopStackIndex 0) (ILit 0))
+                                        (COr (CAnd (CStack (ITopStackIndex 0))        (replace @trueBranch.wp  Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))))
+                                             (CAnd (CNot (CStack (ITopStackIndex 0))) (replace @falseBranch.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1))))))
+                 falseBranch.wp  = @lhs.wp
+                            .wp' = @lhs.wp'
 
 sem Instruction
   | InstSetLocal     lhs.wp = case @lit.copy of
@@ -61,12 +61,13 @@ sem Instruction
                               in  CAnd (CGTE (ITopStackIndex 0) (ILit 0)) (replace first (Just (CReturnValue, CStack (ITopStackIndex 0))) (Just (IReturnValue, IStack (ITopStackIndex 0))))                     
 
 sem StatementList
-  | Cons   tl.wp  = @lhs.wp
-             .wp' = @lhs.wp'
-           hd.wp  = @tl.wp  
-             .wp' = @tl.wp'           
-           lhs.wp = @hd.wp
-              .wp'= @hd.wp'
+  | Cons   tl.wp   = @lhs.wp
+             .wp'  = @lhs.wp'
+           hd.wp   = @tl.wp  
+             .wp'  = @tl.wp'           
+           lhs.wp  = @hd.wp
+              .wp' = @hd.wp'
+              
 {
 replaceParamWithOld :: Integer -> Cond -> Cond
 replaceParamWithOld 0 c = c

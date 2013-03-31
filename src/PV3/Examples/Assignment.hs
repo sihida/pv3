@@ -1,7 +1,7 @@
 module PV3.Examples.Assignment where
 
-import PV3.WP
 import PV3.Condition.ConditionAST
+import PV3.Program.ProgramAST
 
 body :: StatementList
 body = [SInstruction (InstSetLocal  0 (LInt 10)),

@@ -1,7 +1,7 @@
 module PV3.Examples.Simple where
 
-import PV3.WP
-import PV3.Condition.AG
+import PV3.Condition.ConditionAST
+import PV3.Program.ProgramAST
 
 program :: Program
 program = Program 0 0 [SInstruction (InstPushLiteral (LInt 1)),

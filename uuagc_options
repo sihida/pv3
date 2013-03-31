@@ -13,8 +13,8 @@ options : haskellsyntax, catas, semfuns, wrappers, signatures
 file : "src/PV3/Condition/Replace.ag"
 options : haskellsyntax, catas, semfuns, wrappers, signatures
 
-file : "src/PV3/WP.ag"
-options : haskellsyntax, data, catas, semfuns, wrappers, signatures
-
 file : "src/PV3/Program/ProgramAST.ag"
 options : haskellsyntax, data
+
+file : "src/PV3/WP.ag"
+options : haskellsyntax, catas, semfuns, wrappers, signatures

@@ -1,12 +1,11 @@
-module {PV3.Condition.Extract}{}{}
-
-include "ConditionAST.ag"
-
+module {PV3.Condition.Extract}{}
 {
 import PV3.Condition.ConditionAST
 
 import Data.Set
 }
+
+include "ConditionAST.ag"
 
 attr Cond IExpr
   syn paramsB use {union} {empty} :: {Set Integer}

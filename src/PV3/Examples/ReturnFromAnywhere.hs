@@ -1,18 +1,20 @@
 module PV3.Examples.ReturnFromAnywhere where
 
-import PV3.WP
 import PV3.Condition.ConditionAST
+import PV3.Program.ProgramAST
 
 body :: StatementList
 body = [SInstruction (InstSetLocal  0 (LInt 10)),
         SInstruction (InstLoadParam 0),
         SInstruction (InstLoadParam 1),
-        SInstruction (InstAdd),
+        SInstruction InstAdd,
         SInstruction (InstLoadLocal 0),
-        SInstruction (InstEQ),
-        SIfTrueElse  [SInstruction (InstPushLiteral (LInt 1)), SInstruction Instreturn] [SInstruction (InstPushLiteral (LInt (-1))), SInstruction Instreturn],
+        SInstruction InstEQ,
+        SIfTrueElse  [SInstruction (InstPushLiteral (LInt 1)), SInstruction Instreturn] [],
+        SInstruction (InstPushLiteral (LInt (-1))), 
+        SInstruction Instreturn,
         SInstruction (InstPushLiteral (LInt 1)),
-        SInstruction (Instreturn)]
+        SInstruction Instreturn]
 
 program :: Program
 program = Program 2 1 body

@@ -1,11 +1,11 @@
-module {PV3.Condition.Replace}{}{}
+module {PV3.Condition.Replace}{}
+{
+import PV3.Condition.ConditionAST
+
+import Data.Maybe
+}
 
 include "ConditionAST.ag"
-
-{
-import Data.Maybe
-import PV3.Condition.ConditionAST
-}
 
 attr Cond IExpr
   inh   toReplaceWithC :: {Maybe (Cond,  Cond)}

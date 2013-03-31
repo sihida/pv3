@@ -1,14 +1,14 @@
-module {PV3.Condition.ConvertToSBV}{}{}
-
-include "ConditionAST.ag"
-
+module {PV3.Condition.ConvertToSBV}{}
 {
 import PV3.Condition.ConditionAST
 
+import Data.SBV
+
 import Control.Monad
 import Data.Map
-import Data.SBV
 }
+
+include "ConditionAST.ag"
 
 attr Cond
   syn symCond  :: {Map String SBool -> Map String SInteger -> Symbolic SBool}

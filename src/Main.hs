@@ -1,7 +1,8 @@
 module Main where
 
-import PV3.Examples.ReturnFromAnywhere
 import PV3.Verification
+
+import PV3.Examples.ReturnFromAnywhere
 
 import Data.SBV
 
