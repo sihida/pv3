@@ -1,0 +1,19 @@
+module {PV3.Condition.Extract}{}{}
+
+include "ConditionAST.ag"
+
+{
+import PV3.Condition.ConditionAST
+
+import Data.Set
+}
+
+attr Cond IExpr
+  syn paramsB use {union} {empty} :: {Set Integer}
+  syn paramsI use {union} {empty} :: {Set Integer}
+  
+sem Cond
+  | CParamOld  lhs.paramsB = singleton @index
+  
+sem IExpr
+  | IParamOld  lhs.paramsI = singleton @index

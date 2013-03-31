@@ -7,6 +7,9 @@ options : haskellsyntax, catas, semfuns, wrappers, signatures
 file : "src/PV3/Condition/External.ag"
 options : haskellsyntax, catas, semfuns, wrappers, signatures
 
+file : "src/PV3/Condition/Extract.ag"
+options : haskellsyntax, catas, semfuns, wrappers, signatures
+
 file : "src/PV3/Condition/Replace.ag"
 options : haskellsyntax, catas, semfuns, wrappers, signatures
 

@@ -12,7 +12,7 @@ tested-with:           GHC == 7.4.1
 build-type:            Custom
 cabal-version:         >= 1.8
 extra-source-files:    AUTHORS, README.md, uuagc_options,
-                       src/PV3/Condition/ConditionAST.ag, src/PV3/Condition/Replace.ag, src/PV3/Condition/External.ag, src/PV3/Condition/ConvertToSBV.ag
+                       src/PV3/Condition/ConditionAST.ag, src/PV3/Condition/Replace.ag, src/PV3/Condition/External.ag, src/PV3/Condition/ConvertToSBV.ag, src/PV3/Condition/Extract.ag
                        src/PV3/Program/ProgramAST.ag
                        src/PV3/WP.ag, src/PV3/Program/Verification.hs
                        src/PV3/Examples/Assignment.hs, src/PV3/Examples/Simple.hs
@@ -20,5 +20,5 @@ extra-source-files:    AUTHORS, README.md, uuagc_options,
 executable verify
   main-is:             Main.hs
   build-depends:       base, cco >= 0.0.4, uuagc >= 0.9.40.3, uuagc-cabal >= 1.0.3.0, sbv >= 2.9, containers
-  other-modules:       PV3.WP, PV3.Examples.Assignment, PV3.Condition.Replace, PV3.Condition.External, PV3.Condition.ConditionAST, PV3.Condition.ConvertToSBV, PV3.Program.ProgramAST, PV3.Verification
+  other-modules:       PV3.WP, PV3.Examples.Assignment, PV3.Condition.Replace, PV3.Condition.External, PV3.Condition.ConditionAST, PV3.Condition.ConvertToSBV, PV3.Condition.Extract, PV3.Program.ProgramAST, PV3.Verification
   hs-source-dirs:      src

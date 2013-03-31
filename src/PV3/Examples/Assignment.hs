@@ -18,7 +18,7 @@ program = Program 2 1 body
                        
 postcondition :: Cond
 postcondition = CEquiv (CEQ (IAdd (IParamOld 0) (IParamOld 1))
-                            (ILit 10))
+                            (ILit 11))
                        (CEQ IReturnValue
                             (ILit 1))        
 

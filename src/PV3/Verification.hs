@@ -3,9 +3,11 @@ module PV3.Verification where
 import PV3.Condition.ConditionAST
 import qualified PV3.Condition.External     as External
 import qualified PV3.Condition.ConvertToSBV as Convert
+import qualified PV3.Condition.Extract      as Extract
 import PV3.WP
 
-import Data.Map 
+import qualified Data.Map as Map 
+import qualified Data.Set as Set
 import Data.SBV
 
 wp :: Program -> Cond -> Cond
@@ -23,17 +25,24 @@ wpSS ss q = wp_Syn_StatementList $ wrap_StatementList (sem_StatementList ss) (In
 isExternal :: Cond -> Bool
 isExternal c = External.external_Syn_Cond $ External.wrap_Cond (External.sem_Cond c) (External.Inh_Cond {})
 
-convertToSBV :: Cond -> Map String SBool -> Map String SInteger -> Symbolic SBool
+convertToSBV :: Cond -> Map.Map String SBool -> Map.Map String SInteger -> Symbolic SBool
 convertToSBV c mB mI = (Convert.symCond_Syn_Cond $ Convert.wrap_Cond (Convert.sem_Cond c) (Convert.Inh_Cond {})) mB mI
+
+extract :: Cond -> (Set.Set Integer, Set.Set Integer)
+extract c = let syn = Extract.wrap_Cond (Extract.sem_Cond c) (Extract.Inh_Cond {}) in (Extract.paramsB_Syn_Cond syn, Extract.paramsI_Syn_Cond syn)
 
 verify :: Cond -> Program -> Cond -> Symbolic SBool
 verify pre program@(Program nParams _ _) post = let vc = CImplies pre (wp program post)
                                                 in  if   isExternal vc 
-                                                    then do vB      <- mapM (\i -> sBool    ("a" ++ show i)) [0..nParams-1]
-                                                            vI      <- mapM (\i -> sInteger ("a" ++ show i)) [0..nParams-1]
-                                                            returnB <- sBool    "return"
-                                                            returnI <- sInteger "return"
-                                                            let mB = insert "return" returnB (fromList $ zip (Prelude.map (\i -> "a" ++ show i) [0..nParams-1]) vB)
-                                                                mI = insert "return" returnI (fromList $ zip (Prelude.map (\i -> "a" ++ show i) [0..nParams-1]) vI)
-                                                            convertToSBV vc mB mI
+                                                    then let (paramsB, paramsI) = extract vc
+                                                             intersect = Set.intersection paramsB paramsI
+                                                         in if   Set.null intersect
+                                                            then let paramsB' = Set.toList paramsB
+                                                                     paramsI' = Set.toList paramsI
+                                                                 in  do vB <- mapM (\i -> sBool    ("a" ++ show i)) paramsB'
+                                                                        vI <- mapM (\i -> sInteger ("a" ++ show i)) paramsI'
+                                                                        let mB = Map.fromList $ zip (map (\i -> "a" ++ show i) paramsB') vB
+                                                                            mI = Map.fromList $ zip (map (\i -> "a" ++ show i) paramsI') vI
+                                                                        convertToSBV vc mB mI
+                                                            else error ("These parameters are used as bool and int: " ++ show intersect)                                                                                                                      
                                                     else error "Program incorrect, wp contains references to internal (stack) data"

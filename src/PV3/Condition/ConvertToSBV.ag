@@ -30,22 +30,25 @@ sem Cond
   | CGTE          lhs.symCond = (\m1 m2 -> liftM2 (.>=) (@i1.symIExpr m1 m2) (@i2.symIExpr m1 m2))
   | CUnivQuant    lhs.symCond = quant forall @varName @c.symCond   
   | CExistQuant   lhs.symCond = quant exists @varName @c.symCond  
-  | CParamOld     lhs.symCond = (\m1 _ -> return (m1 ! ("a" ++ show @index)))
-  | CReturnValue  lhs.symCond = (\m1 _ -> return (m1 ! "return"))
-  | CLit          lhs.symCond = (\_  _ -> return (literal @b))
+  | CParamOld     lhs.symCond = (\m1 _ -> return $ lookupEnv ("a" ++ show @index) m1)
+  | CReturnValue  lhs.symCond = (\m1 _ -> return $ lookupEnv "return" m1)
+  | CLit          lhs.symCond = (\_  _ -> return $ literal @b)
   
 sem IExpr
   | IAdd          lhs.symIExpr = (\m1 m2 -> liftM2 (+)  (@i1.symIExpr m1 m2) (@i2.symIExpr m1 m2))
   | ISub          lhs.symIExpr = (\m1 m2 -> liftM2 (-)  (@i1.symIExpr m1 m2) (@i2.symIExpr m1 m2))
   | IMul          lhs.symIExpr = (\m1 m2 -> liftM2 (*)  (@i1.symIExpr m1 m2) (@i2.symIExpr m1 m2))
   | IDiv          lhs.symIExpr = (\m1 m2 -> liftM2 sDiv (@i1.symIExpr m1 m2) (@i2.symIExpr m1 m2))
-  | IParamOld     lhs.symIExpr = (\_  m2 -> return (m2 ! ("a" ++ show @index)))
-  | IReturnValue  lhs.symIExpr = (\_  m2 -> return (m2 ! "return"))
-  | ILit          lhs.symIExpr = (\_  _  -> return (literal @i))
-  | IVarName      lhs.symIExpr = (\_  m2 -> return (m2 ! @varName))
+  | IParamOld     lhs.symIExpr = (\_  m2 -> return $ lookupEnv ("a" ++ show @index) m2)
+  | IReturnValue  lhs.symIExpr = (\_  m2 -> return $ lookupEnv "return" m2)
+  | ILit          lhs.symIExpr = (\_  _  -> return $ literal @i)
+  | IVarName      lhs.symIExpr = (\_  m2 -> return $ lookupEnv @varName m2)
   
 {
 quant :: (String -> Symbolic (SBV Integer)) -> String -> (Map String SBool -> Map String SInteger -> Symbolic SBool) -> Map String SBool -> Map String SInteger -> Symbolic SBool
 quant q v c m1 m2 = do x <- q v
                        c m1 (insert v x m2)
+                       
+lookupEnv :: String -> Map String v -> v
+lookupEnv k m = findWithDefault (error ("Variable " ++ k ++ " not defined!")) k m 
 }
