@@ -1,4 +1,4 @@
-module PV3.Verification (verify) where
+module PV3.Verification where
 
 import PV3.Condition.ConditionAST
 import qualified PV3.Condition.ConvertToSBV as Convert

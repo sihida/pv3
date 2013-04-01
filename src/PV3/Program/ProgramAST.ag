@@ -8,6 +8,7 @@ data Program
 data Statement   
   | SInstruction    instr      :: Instruction
   | SIfTrueElse     trueBranch :: StatementList  falseBranch :: StatementList
+  | SWhileTrue      trueBranch :: {[Statement]}
                
 data Instruction 
   | InstSetLocal    index      :: Integer        lit :: Literal

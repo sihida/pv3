@@ -5,6 +5,11 @@ import PV3.Condition.Replace
 import PV3.Program.ProgramAST
 }
 
+{
+bounded :: Int
+bounded = 5
+}
+
 include "Program/ProgramAST.ag" 
 
 attr Program Statement Instruction StatementList
@@ -29,7 +34,10 @@ sem Statement
                                              (CAnd (CNot (CStack (ITopStackIndex 0))) (replace @falseBranch.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1))))))
                  falseBranch.wp  = @lhs.wp
                             .wp' = @lhs.wp'
-
+  | SWhileTrue   lhs.wp = let w0 = CAnd (CNot (CStack (ITopStackIndex 0))) (wp_Syn_Statement $ wrap_Statement (sem_Statement (SInstruction InstPop)) (Inh_Statement @lhs.wp @lhs.wp')) 
+                              w  = take (bounded+1) (iterate (\w' -> CAnd (CStack (ITopStackIndex 0)) (wp_Syn_StatementList $ wrap_StatementList (sem_StatementList ([SInstruction InstPop] ++ @trueBranch)) (Inh_StatementList {wp_Inh_StatementList=w', wp'_Inh_StatementList=w'}))) w0)
+                          in  foldl COr (CLit False) w 
+                              
 sem Instruction
   | InstSetLocal     lhs.wp = case @lit.copy of
                                 (LBool b) -> replace @lhs.wp (Just (CLocal @index, CLit b)) Nothing
@@ -37,11 +45,11 @@ sem Instruction
   | InstLoadLocal    lhs.wp = let first = replace @lhs.wp (Just (CStack (ITopStackIndex 0), CLocal @index)) (Just (IStack (ITopStackIndex 0), ILocal @index))
                               in  replace first Nothing (Just (ITopStackIndex 0, ITopStackIndex 1))
   | InstStoreLocal   lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
-                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 0)) (replace first (Just (CStack (ITopStackIndex (-1)), CLocal @index)) (Just (IStack (ITopStackIndex (-1)), ILocal @index)))
+                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 0)) (replace first (Just (CLocal @index, CStack (ITopStackIndex 0))) (Just (ILocal @index, IStack (ITopStackIndex 0))))
   | InstLoadParam    lhs.wp = let first = replace @lhs.wp (Just (CStack (ITopStackIndex 0), CParamCurr @index)) (Just (IStack (ITopStackIndex 0), IParamCurr @index))
                               in  replace first Nothing (Just (ITopStackIndex 0, ITopStackIndex 1))
   | InstStoreParam   lhs.wp = let first = replace @lhs.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
-                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 0)) (replace first (Just (CStack (ITopStackIndex (-1)), CParamCurr @index)) (Just (IStack (ITopStackIndex (-1)), IParamCurr @index)))                   
+                              in  CAnd (CGTE (ITopStackIndex 0) (ILit 0)) (replace first (Just (CParamCurr @index, CStack (ITopStackIndex 0))) (Just (IParamCurr @index, IStack (ITopStackIndex 0))))                   
   | InstPushLiteral  lhs.wp = let first = case @lit.copy of
                                            (LBool b) -> replace @lhs.wp (Just (CStack (ITopStackIndex 0), CLit b)) Nothing 
                                            (LInt  i) -> replace @lhs.wp Nothing (Just (IStack (ITopStackIndex 0), ILit i)) 
