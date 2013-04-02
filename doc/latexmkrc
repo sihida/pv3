@@ -1,0 +1,10 @@
+$pdf_mode = 1;
+$pdflatex = 'internal mypdflatex %O %S';
+sub mypdflatex {
+    my @args = @_;
+    if ($args[1] =~ m/^(.*)\.lhs$/) {
+        $args[1] = "$1.tex";
+        system 'lhs2TeX', '-o', $args[1], $_[1];
+    }
+    return system 'pdflatex', @args;
+}  
