@@ -17,7 +17,7 @@ import PV3.Program.ProgramAST
 {
 -- | Maximum steps (instructions) for bounded verification.
 bounded :: Int
-bounded = 20
+bounded = 19
 }
 
 include "Program/ProgramAST.ag"  -- semantics in this attribute grammar are defined over the datatypes from ProgramAST
@@ -60,10 +60,10 @@ sem Statement
                                            (COr (CAnd (CStack (ITopStackIndex 0))        (replace @trueBranch.wp  Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))))
                                                 (CAnd (CNot (CStack (ITopStackIndex 0))) (replace @falseBranch.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1))))))
                  
-  | SWhileTrue   lhs.wp = let w0            = CAnd (CNot (CStack (ITopStackIndex 0))) (wp_Syn_Statement $ wrap_Statement (sem_Statement (SInstruction InstPop)) (Inh_Statement {wp_Inh_Statement= @lhs.wp, wp'_Inh_Statement= @lhs.wp', length_Inh_Statement=0})) 
+  | SWhileTrue   lhs.wp = let w0            = CImplies (CNot (CStack (ITopStackIndex 0))) (wp_Syn_Statement $ wrap_Statement (sem_Statement (SInstruction InstPop)) (Inh_Statement {wp_Inh_Statement= @lhs.wp, wp'_Inh_Statement= @lhs.wp', length_Inh_Statement=0})) 
                               newTrueBranch = SInstruction InstPop : @trueBranch.copy
-                              ws            = take (1 + max ((bounded - @lhs.length - 1) `div` (@trueBranch.length+1)) 0) (iterate (\w' -> CAnd (CStack (ITopStackIndex 0)) (wp_Syn_StatementList $ wrap_StatementList (sem_StatementList newTrueBranch) (Inh_StatementList {wp_Inh_StatementList=w', wp'_Inh_StatementList= @lhs.wp', length_Inh_StatementList=0}))) w0)
-                          in  foldl1 COr ws
+                              ws            = take (1 + max ((bounded - @lhs.length - 1) `div` (@trueBranch.length+1)) 0) (iterate (\w' -> CImplies (CStack (ITopStackIndex 0)) (wp_Syn_StatementList $ wrap_StatementList (sem_StatementList newTrueBranch) (Inh_StatementList {wp_Inh_StatementList=w', wp'_Inh_StatementList= @lhs.wp', length_Inh_StatementList=0}))) w0)
+                          in  foldl1 CAnd ws
                               
 sem Instruction
   | InstSetLocal     lhs.wp = case @lit.copy of
