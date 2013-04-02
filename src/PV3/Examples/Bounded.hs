@@ -40,4 +40,4 @@ program = Program 1 2 body
 postcondition :: Cond
 postcondition = CEQ IReturnValue (IMul (IParamOld 0) (IParamOld 0))
 precondition :: Cond
-precondition = CGTE (IParamOld 0) (ILit 0)
+precondition = (IParamOld 0) `CGTE` (ILit 0)
