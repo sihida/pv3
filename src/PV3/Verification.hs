@@ -21,10 +21,10 @@ wpI  :: Instruction -> Cond -> Cond
 wpI  i  q = wp_Syn_Instruction   $ wrap_Instruction   (sem_Instruction i)    (Inh_Instruction   {wp_Inh_Instruction=q,   wp'_Inh_Instruction=q})
 
 wpS  :: Statement -> Cond -> Cond
-wpS  s  q = wp_Syn_Statement     $ wrap_Statement     (sem_Statement s)      (Inh_Statement     {wp_Inh_Statement=q,     wp'_Inh_Statement=q})
+wpS  s  q = wp_Syn_Statement     $ wrap_Statement     (sem_Statement s)      (Inh_Statement     {wp_Inh_Statement=q,     wp'_Inh_Statement=q,     length_Inh_Statement=0})
 
 wpSS :: StatementList -> Cond -> Cond
-wpSS ss q = wp_Syn_StatementList $ wrap_StatementList (sem_StatementList ss) (Inh_StatementList {wp_Inh_StatementList=q, wp'_Inh_StatementList=q})
+wpSS ss q = wp_Syn_StatementList $ wrap_StatementList (sem_StatementList ss) (Inh_StatementList {wp_Inh_StatementList=q, wp'_Inh_StatementList=q, length_Inh_StatementList=0})
 
   -- External check
 

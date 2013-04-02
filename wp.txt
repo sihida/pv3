@@ -2,11 +2,11 @@ wp (SETLOCAL k x)  (Q, Q') = (Q[x/loc_k], Q')
   {loc_k := x}
 wp (LOADLOCAL k)   (Q, Q') = ((Q[loc_k/stack_T])[(T+1)/T], Q')
   {T := T+1; stack_T := loc_k}
-wp (STORELOCAL k)  (Q, Q') = ((Q[(T-1)/T])[loc_k/stack_(T-1)] && T >= 0, Q')
+wp (STORELOCAL k)  (Q, Q') = ((Q[(T-1)/T])[stack_T/loc_k] && T >= 0, Q')
   {loc_k := stack_T; T := T-1}
 wp (LOADPARAM k)   (Q, Q') = ((Q[param_k/stack_T])[(T+1)/T], Q')
   {T := T+1; stack_T := param_k}
-wp (STOREPARAM k)  (Q, Q') = ((Q[(T-1)/T])[param_k/stack_(T-1)] && T >= 0, Q')
+wp (STOREPARAM k)  (Q, Q') = ((Q[(T-1)/T])[stack_T/param_k] && T >= 0, Q')
   {param_k := stack_T; T := T-1}
 wp (PUSHLITERAL l) (Q, Q') = ((Q[l/stack_T])[(T+1)/T], Q')
   {T := T+1; stack_T := l}

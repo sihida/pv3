@@ -15,10 +15,10 @@ extra-source-files:    AUTHORS, README.md, uuagc_options,
                        src/PV3/Program/ProgramAST.ag
                        src/PV3/WP.ag 
                        src/PV3/Verification.hs
-                       src/PV3/Examples/Simple.hs, src/PV3/Examples/Assignment.hs, src/PV3/Examples/ReturnFromAnywhere.hs, src/PV3/Examples/Bounded.hs
+                       src/PV3/Examples/Simple.hs, src/PV3/Examples/Assignment.hs, src/PV3/Examples/ReturnFromAnywhere.hs, src/PV3/Examples/Bounded.hs, src/PV3/Examples/Bounded2.hs, src/PV3/Examples/AnotherExample.hs
 
 executable verify
   main-is:             Main.hs
   build-depends:       base, cco >= 0.0.4, uuagc >= 0.9.40.3, uuagc-cabal >= 1.0.3.0, sbv == 2.9, containers
-  other-modules:       PV3.Condition.ConditionAST, PV3.Condition.ConvertToSBV, PV3.Condition.External, PV3.Condition.Extract, PV3.Condition.Replace, PV3.Program.ProgramAST, PV3.WP, PV3.Verification, PV3.Examples.Bounded
+  other-modules:       PV3.Condition.ConditionAST, PV3.Condition.ConvertToSBV, PV3.Condition.External, PV3.Condition.Extract, PV3.Condition.Replace, PV3.Program.ProgramAST, PV3.WP, PV3.Verification, PV3.Examples.Bounded2
   hs-source-dirs:      src

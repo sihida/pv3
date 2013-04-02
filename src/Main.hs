@@ -1,7 +1,6 @@
 module Main where
 
 import PV3.Verification
-import PV3.Condition.ConditionAST
 
 import PV3.Examples.Bounded2
 

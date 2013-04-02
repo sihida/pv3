@@ -31,4 +31,4 @@ program = Program 1 2 body
 postcondition :: Cond
 postcondition = CEQ IReturnValue (IMul (IParamOld 0) (IParamOld 0))
 precondition :: Cond
-precondition = CEQ (IParamOld 0) (ILit 2)
+precondition = CAnd (CGTE (IParamOld 0) (ILit 0)) (CLTE (IParamOld 0) (ILit 5))
