@@ -13,7 +13,7 @@ module Main where
 
 import PV3.Verification
 
-import PV3.Examples.Bounded2  -- example that is verified
+import PV3.Examples.Bounded2  -- example that will be verified
 
 import Data.SBV
 
