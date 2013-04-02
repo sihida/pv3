@@ -18,12 +18,12 @@
 \newcommand{\semwprule}[3]{
   \begin{align*}
   \texttt{#1} &=_{sem} \{#2\}
-  \\wp \; (\texttt{#1}) \; Q \; &= \; #3
+  \\wp \; (\texttt{#1}) \; Q \; &=_{def} \; #3
   \end{align*}
 }
 \newcommand{\wprule}[2]{
   \begin{align*}
-  &wp \; (\texttt{#1}) \; Q \; = \; #2
+  &wp \; (\texttt{#1}) \; Q \; =_{def} \; #2
   \end{align*}
 }
 
