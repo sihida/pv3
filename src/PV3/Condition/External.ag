@@ -1,9 +1,18 @@
+{- |
+Attribute grammar for checking conditions (boolean expressions) for being external, i.e. they contain no references to internal (stack) data.
+
+Part of PV - Project 3.
+
+Authors: Jaap van der Plas and Danny Bergsma
+Version: 0.1, 2 April 2013
+-}
+
 module {PV3.Condition.External}{}
 {
 import PV3.Condition.ConditionAST
 }
 
-include "ConditionAST.ag"
+include "ConditionAST.ag"  -- semantics in this attribute grammar are defined over the datatypes from ConditionAST
 
 attr Cond IExpr
   syn external use {&&} {True} :: Bool

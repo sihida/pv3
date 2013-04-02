@@ -1,3 +1,12 @@
+{- |
+Example from assignment, slightly altered to test the `return from anywhere' extension.
+
+Part of PV - Project 3.
+
+Authors: Jaap van der Plas and Danny Bergsma
+Version: 0.1, 2 April 2013
+-}
+
 module PV3.Examples.ReturnFromAnywhere where
 
 import PV3.Condition.ConditionAST

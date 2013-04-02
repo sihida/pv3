@@ -1,3 +1,12 @@
+{- |
+Attribute grammar for extracting param type info from a condition (boolean expression).
+
+Part of PV - Project 3.
+
+Authors: Jaap van der Plas and Danny Bergsma
+Version: 0.1, 2 April 2013
+-}
+
 module {PV3.Condition.Extract}{}
 {
 import PV3.Condition.ConditionAST
@@ -5,7 +14,7 @@ import PV3.Condition.ConditionAST
 import Data.Set
 }
 
-include "ConditionAST.ag"
+include "ConditionAST.ag"  -- semantics in this attribute grammar are defined over the datatypes from ConditionAST
 
 attr Cond IExpr
   syn paramsB use {union} {empty} :: {Set Integer}

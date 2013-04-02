@@ -1,3 +1,12 @@
+{- |
+Attribute grammar for replacing boolean/int (sub)expressions with (other) boolean/int (sub)expressions (in a boolean expression).
+
+Part of PV - Project 3.
+
+Authors: Jaap van der Plas and Danny Bergsma
+Version: 0.1, 2 April 2013
+-}
+
 module {PV3.Condition.Replace}{}
 {
 import PV3.Condition.ConditionAST
@@ -5,12 +14,12 @@ import PV3.Condition.ConditionAST
 import Data.Maybe
 }
 
-include "ConditionAST.ag"
+include "ConditionAST.ag"  -- semantics in this attribute grammar are defined over the datatypes from ConditionAST
 
 attr Cond IExpr
-  inh   toReplaceWithC :: {Maybe (Cond,  Cond)}
-  inh   toReplaceWithI :: {Maybe (IExpr, IExpr)}
-  syn   copy           :: self
+  inh   toReplaceWithC :: {Maybe (Cond,  Cond)}   -- ^ If Just: first element (boolean (sub)expression) should be replaced with second element (boolean (sub)expression). If Nothing: no boolean replacements should be done.
+  inh   toReplaceWithI :: {Maybe (IExpr, IExpr)}  -- ^ If Just: first element (int (sub)expression) should be replaced with second element (int (sub)expression). If Nothing: no int replacements should be done.
+  syn   copy           :: self                    -- ^ If we do not need to replace the Cond/IExpr, we should just keep its copy.
   
 sem Cond
   | *                   lhs.copy = if   isJust @lhs.toReplaceWithC 
@@ -37,7 +46,9 @@ sem IExpr
                                    else @copy
                   
 {
-isTopStackIndex :: IExpr -> Bool
+-- | Returns whether the given int expression represents T.
+isTopStackIndex :: IExpr  -- ^ The int expression that will be analyzed.
+                -> Bool   -- ^ Returns True iff the given int expression represents T.
 isTopStackIndex (ITopStackIndex _) = True
 isTopStackIndex _                  = False
 }

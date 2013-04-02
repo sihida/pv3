@@ -1,3 +1,12 @@
+{- |
+Very simple example.
+
+Part of PV - Project 3.
+
+Authors: Jaap van der Plas and Danny Bergsma
+Version: 0.1, 2 April 2013
+-}
+
 module PV3.Examples.Simple where
 
 import PV3.Condition.ConditionAST

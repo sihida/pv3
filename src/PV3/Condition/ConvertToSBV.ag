@@ -1,3 +1,12 @@
+{- |
+Attribute grammar for converting conditions (boolean expressions) to SBV format.
+
+Part of PV - Project 3.
+
+Authors: Jaap van der Plas and Danny Bergsma
+Version: 0.1, 2 April 2013
+-}
+
 module {PV3.Condition.ConvertToSBV}{}
 {
 import PV3.Condition.ConditionAST
@@ -6,15 +15,20 @@ import Data.SBV
 
 import Control.Monad
 import Data.Map
+import Text.Printf
 }
 
-include "ConditionAST.ag"
+{
+errorNotDefined = "Variable %s not defined!"
+}
+
+include "ConditionAST.ag"  -- semantics in this attribute grammar are defined over the datatypes from ConditionAST
 
 attr Cond
-  syn symCond  :: {Map String SBool -> Map String SInteger -> Symbolic SBool}
+  syn symCond  :: {Map String SBool -> Map String SInteger -> Symbolic SBool}     -- ^ boolean expression in SBV format (the Maps are used as environments to lookup boolean/int variables)
   
 attr IExpr
-  syn symIExpr :: {Map String SBool -> Map String SInteger -> Symbolic SInteger}
+  syn symIExpr :: {Map String SBool -> Map String SInteger -> Symbolic SInteger}  -- ^ int expression in SBV format (the Maps are used as environments to lookup boolean/int variables)
   
 sem Cond
   | CAnd          lhs.symCond = (\m1 m2 -> liftM2 (&&&) (@c1.symCond  m1 m2) (@c2.symCond  m1 m2))
@@ -45,10 +59,23 @@ sem IExpr
   | IVarName      lhs.symIExpr = (\_  m2 -> return $ lookupEnv @varName m2)
   
 {
-quant :: (String -> Symbolic (SBV Integer)) -> String -> (Map String SBool -> Map String SInteger -> Symbolic SBool) -> Map String SBool -> Map String SInteger -> Symbolic SBool
+{- | 
+Quantifies the given variable (name), bounds it, inserts it into the (given) environment and passes down the (updated) environments 
+to the (already to SBV converted) boolean subexpression.
+Returns the resulting boolean subexpression.
+-}
+quant :: (String -> Symbolic (SBV Integer))                           -- ^ Type of quantification that will be applied (universal/existential). 
+      -> String                                                       -- ^ Name of variable that will be quantified.
+      -> (Map String SBool -> Map String SInteger -> Symbolic SBool)  -- ^ Boolean subexpression, that has already been converted to SBV format. The updated environments will be passed down to this subexpression.
+      -> Map String SBool                                             -- ^ Environment for looking up boolean variables. Will be passed down to the given subexpression.
+      -> Map String SInteger                                          -- ^ Environment for looking up int variables. Will be updated with the variable that will be quantified. Will be passed down to the given subexpression.
+      -> Symbolic SBool                                               -- ^ Resulting boolean subexpression (given subexpression quantified).
 quant q v c m1 m2 = do x <- q v
                        c m1 (insert v x m2)
-                       
-lookupEnv :: String -> Map String v -> v
-lookupEnv k m = findWithDefault (error ("Variable " ++ k ++ " not defined!")) k m 
+                  
+-- | Looks up the given variable in the given environment. Gives an error when the variable is not defined in the given environment.                  
+lookupEnv :: String        -- ^ Name of the variable that will be looked up.
+          -> Map String v  -- ^ Environment in which the given variables will be looked up.
+          -> v             -- ^ Looked up variable.
+lookupEnv k m = findWithDefault (error $ printf k) k m 
 }

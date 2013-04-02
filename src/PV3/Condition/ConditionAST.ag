@@ -1,10 +1,19 @@
+{- |
+Attribute grammar for defining the datatypes used for conditions (boolean expressions).
+
+Part of PV - Project 3.
+
+Authors: Jaap van der Plas and Danny Bergsma
+Version: 0.1, 2 April 2013
+-}
+
 module {PV3.Condition.ConditionAST}{}{}
 
 data Cond  -- could also be named BExpr
   | CAnd           c1          :: Cond      c2          :: Cond   -- c1 && c2
   | COr            c1          :: Cond      c2          :: Cond   -- c1 || c2
   | CNot           c           :: Cond                            -- !c
-  | CImplies       c1          :: Cond      c2          :: Cond   -- cAntecdent ==> cConsequent
+  | CImplies       c1          :: Cond      c2          :: Cond   -- c1 ==> c2
   | CEquiv         c1          :: Cond      c2          :: Cond   -- c1 <==> c2
   | CEQ            i1          :: IExpr     i2          :: IExpr  -- i1 == i2
   | CNEQ           i1          :: IExpr     i2          :: IExpr  -- i1 /= i2
@@ -18,7 +27,7 @@ data Cond  -- could also be named BExpr
   | CReturnValue                                                  -- return
   | CLit           b           :: Bool                            -- b (true/false)
   
-  -- pre- and postconditions should not refer to these internals:
+  -- pre- and postconditions should not refer to these internals (checked with External.ag):
   | CLocal         index       :: Integer                         -- loc_index
   | CParamCurr     index       :: Integer                         -- param_index
   | CStack         index       :: IExpr                           -- stack_(T+offset)
@@ -36,7 +45,7 @@ data IExpr
   | ILit           i           :: Integer                         -- i (..., -1, 0, 1, ...)
   | IVarName       varName     :: {String}                        -- x, y, ... (universal/existential quantified)
   
-  -- pre- and postconditions should not refer to these internals:
+  -- pre- and postconditions should not refer to these internals (checked with External.ag):
   | ILocal         index       :: Integer                         -- loc_index
   | IParamCurr     index       :: Integer                         -- param_index
   | IStack         index       :: IExpr                           -- stack_(T+offset)

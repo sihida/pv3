@@ -1,3 +1,12 @@
+{- |
+Example that just returns the first parameter, but uses a (useless) loop for this. To test bounded verification.
+
+Part of PV - Project 3.
+
+Authors: Jaap van der Plas and Danny Bergsma
+Version: 0.1, 2 April 2013
+-}
+
 module PV3.Examples.Bounded2 where
 
 import PV3.Condition.ConditionAST

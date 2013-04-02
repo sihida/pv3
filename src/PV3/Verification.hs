@@ -1,60 +1,124 @@
-module PV3.Verification where
+{- |
+Main (high-level) verification module of the Bytecode Verification Engine.
 
-import PV3.Condition.ConditionAST
+Calculates verification conditions of given specifications (in Data.SBV format).
+
+Part of PV - Project 3.
+
+Authors: Jaap van der Plas and Danny Bergsma
+Version: 0.1, 2 April 2013
+-}
+
+module PV3.Verification (verify) where
+
+
+  -- Imports
+
+  
+import           PV3.Condition.ConditionAST
 import qualified PV3.Condition.ConvertToSBV as Convert
 import qualified PV3.Condition.External     as External
 import qualified PV3.Condition.Extract      as Extract
-import PV3.Program.ProgramAST
-import PV3.WP
+import           PV3.Program.ProgramAST
+import           PV3.WP
 
-import Data.SBV
+import           Data.SBV
 
-import qualified Data.Map as Map 
-import qualified Data.Set as Set
+import qualified Data.Map                   as Map 
+import qualified Data.Set                   as Set
+import           Text.Printf
+
+
+  -- Constants
+
+  
+errorInternal             = "Program incorrect, wp contains references to internal (stack) data"
+errorSomeParamsBoolAndInt = "These parameters are used as bool and int: %s"
+
 
   -- Weakest precondition
 
-wp   :: Program -> Cond -> Cond
+  
+-- | Calculates weakest precondition of given program - postcondition combination.
+wp   :: Program  -- ^ Program the weakest precondition will be calculated over.
+     -> Cond     -- ^ Postcondition used as ``start'' condition in het calculation.
+     -> Cond     -- ^ Resulting weakest precondition (wrt params).
 wp   p  q = wp_Syn_Program       $ wrap_Program       (sem_Program p)        (Inh_Program       {wp_Inh_Program=q})
 
-wpI  :: Instruction -> Cond -> Cond
+-- wpI, wpS and wpSS are never used, but are useful for (future) debug purposes...
+
+-- | Calculates weakest precondition of given instruction - postcondition combination.
+wpI  :: Instruction  -- ^ Instruction the weakest precondition will be calculated over. 
+     -> Cond         -- ^ Postcondition used as ``start'' condition in the calculation.
+     -> Cond         -- ^ Resulting weakest precondition (wrt params).
 wpI  i  q = wp_Syn_Instruction   $ wrap_Instruction   (sem_Instruction i)    (Inh_Instruction   {wp_Inh_Instruction=q,   wp'_Inh_Instruction=q})
 
-wpS  :: Statement -> Cond -> Cond
+-- | Calculates weakest precondition of given statement - postcondition combination.
+wpS  :: Statement  -- ^ Statement the weakest precondition will be calculated over.
+     -> Cond       -- ^ Postcondition used as ``start'' condition in the calculation.
+     -> Cond       -- ^ Resulting weakest precondition (wrt params).
 wpS  s  q = wp_Syn_Statement     $ wrap_Statement     (sem_Statement s)      (Inh_Statement     {wp_Inh_Statement=q,     wp'_Inh_Statement=q,     length_Inh_Statement=0})
 
-wpSS :: StatementList -> Cond -> Cond
+-- | Calculates weakest precondition of given statements - postcondition combination.
+wpSS :: StatementList  -- ^ Statements the weakest precondition will be calculated over.
+     -> Cond           -- ^ Postcondition used as ``start'' condition in the calculation.
+     -> Cond           -- ^ Resulting weakest precondition (wrt params). 
 wpSS ss q = wp_Syn_StatementList $ wrap_StatementList (sem_StatementList ss) (Inh_StatementList {wp_Inh_StatementList=q, wp'_Inh_StatementList=q, length_Inh_StatementList=0})
+
 
   -- External check
 
-isExternal :: Cond -> Bool
+  
+-- | Returns whether the given condition (boolean expression) is external, i.e. it contains no references to internal (stack) data.  
+isExternal :: Cond  -- ^ The condition that will be checked for being external. 
+           -> Bool  -- ^ True iff given condition is external.
 isExternal c = External.external_Syn_Cond $ External.wrap_Cond (External.sem_Cond c) (External.Inh_Cond {})
+
 
   -- Convert to SBV
 
-convertToSBV :: Cond -> Map.Map String SBool -> Map.Map String SInteger -> Symbolic SBool
+  
+-- | Converts given condition (boolean expression) to a condition in SBV format, using the given environments to lookup variables.
+convertToSBV :: Cond                     -- ^ Condition that will be converted. 
+             -> Map.Map String SBool     -- ^ Environment that will be used to lookup boolean variables.
+             -> Map.Map String SInteger  -- ^ Environment that will be used to lookup int variables.
+             -> Symbolic SBool           -- ^ Resulting condition in SBV format.
 convertToSBV c mB mI = (Convert.symCond_Syn_Cond $ Convert.wrap_Cond (Convert.sem_Cond c) (Convert.Inh_Cond {})) mB mI
+
 
   -- Extract type info params
 
-extract :: Cond -> (Set.Set Integer, Set.Set Integer)
+  
+-- | Returns a pair of sets containing all parameter indexes that are used as boolean/int expression in the given condition (boolean expression). The intersection is non-empty for a ``mistyped'' condition. 
+extract :: Cond                                -- ^ Condition that will be used to extract parameter type info from. 
+        -> (Set.Set Integer, Set.Set Integer)  -- ^ First element: all parameter indexes used as boolean expression in given condition. Second element: ~ used as int expression.
 extract c = let syn = Extract.wrap_Cond (Extract.sem_Cond c) (Extract.Inh_Cond {}) in (Extract.paramsB_Syn_Cond syn, Extract.paramsI_Syn_Cond syn)
+
 
   -- Verify
 
-verify :: Cond -> Program -> Cond -> Symbolic SBool
+  
+{- | 
+Calculates the verification condition (in Data.SBV) format wrt the given specification (precondition - program - postcondition combination), 
+i.e. precondition => wp program postcondition.
+Gives an error when the verification condition is ``mistyped'' (parameters are used as boolean and int expressions) or when it contains references 
+to internal (stack) data, i.e. program is malformed.
+-}
+verify :: Cond            -- ^ Precondition of specification. 
+       -> Program         -- ^ Program of specification.
+       -> Cond            -- ^ Postcondition of specification.
+       -> Symbolic SBool  -- ^ Resulting verification condition.
 verify pre program@(Program nParams _ _) post = let vc = CImplies pre (wp program post)
                                                 in  if   isExternal vc 
                                                     then let (paramsB, paramsI) = extract vc
                                                              intersect = Set.intersection paramsB paramsI
-                                                         in if   Set.null intersect
+                                                         in if   Set.null intersect                                                          -- VC not "mistyped"?
                                                             then let paramsB' = Set.toList paramsB
                                                                      paramsI' = Set.toList paramsI
-                                                                 in  do vB <- mapM (\i -> sBool    ("a" ++ show i)) paramsB'
-                                                                        vI <- mapM (\i -> sInteger ("a" ++ show i)) paramsI'
-                                                                        let mB = Map.fromList $ zip (map (\i -> "a" ++ show i) paramsB') vB
-                                                                            mI = Map.fromList $ zip (map (\i -> "a" ++ show i) paramsI') vI
+                                                                 in  do vB <- mapM (\i -> sBool    ("a" ++ show i)) paramsB'                 -- declare boolean params
+                                                                        vI <- mapM (\i -> sInteger ("a" ++ show i)) paramsI'                 -- declare int params
+                                                                        let mB = Map.fromList $ zip (map (\i -> "a" ++ show i) paramsB') vB  -- build boolean environment
+                                                                            mI = Map.fromList $ zip (map (\i -> "a" ++ show i) paramsI') vI  -- build int environment
                                                                         convertToSBV vc mB mI
-                                                            else error ("These parameters are used as bool and int: " ++ show intersect)                                                                                                                      
-                                                    else error "Program incorrect, wp contains references to internal (stack) data"
+                                                            else error $ printf errorSomeParamsBoolAndInt (show intersect)                                                                                                                     
+                                                    else error errorInternal

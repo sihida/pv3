@@ -1,3 +1,12 @@
+{- |
+Attribute grammar for calculating the weakest precondition of instructions, statements and programs.
+
+Part of PV - Project 3.
+
+Authors: Jaap van der Plas and Danny Bergsma
+Version: 0.1, 2 April 2013
+-}
+
 module {PV3.WP}{}
 {
 import PV3.Condition.ConditionAST
@@ -6,51 +15,51 @@ import PV3.Program.ProgramAST
 }
 
 {
+-- | Maximum steps (instructions) for bounded verification.
 bounded :: Int
 bounded = 20
 }
 
-include "Program/ProgramAST.ag" 
+include "Program/ProgramAST.ag"  -- semantics in this attribute grammar are defined over the datatypes from ProgramAST
 
 attr Program Statement Instruction StatementList
-  inh wp                  :: Cond
-  syn wp                  :: Cond
+  inh wp                  :: Cond  -- ^ (intermediate) weakest precondition that will be transformed...
+  syn wp                  :: Cond  -- ^ to (possibly another intermediate) weakest precondition
   
 attr Statement Instruction StatementList
-  inh wp'                 :: Cond
-  syn wp'                 :: Cond
+  inh wp'                 :: Cond  -- ^ Original postcondition of program (used for ``return from anywhere''). 
 
-  syn copy                :: self
+  syn copy                :: self  -- ^ Used in the SWhileTrue rule for @lhs.wp to get a copy (of type [Statement]) of the trueBranch.
   
 attr Instruction
-  syn length              :: Int
+  syn length              :: Int  -- ^ #instructions (steps) of this instruction. Used for bounded verification.
     
 attr StatementList
-  inh length              :: Int
-  syn length use {+} {0}  :: Int
+  inh length              :: Int  -- ^ #instructions (steps) of all statements/instructions in front of the hd (head). Used for bounded verification.
+  syn length use {+} {0}  :: Int  -- ^ #instructions (steps) of all statements/instructions in hd + tl (i.e. the full (sub)list). Used for bounded verification.
   
 attr Statement
-  inh length              :: Int
-  syn length              :: Int
+  inh length              :: Int  -- ^ #instructions (steps) of all statements/instructions in front and at the back of the statement. Used for bounded verification. 
+  syn length              :: Int  -- ^ #instructions (steps) of all (sub)statements/instructions in statement. Used for bounded verification.
   
 attr Literal
-  syn copy                :: self
+  syn copy                :: self  -- ^ Used in the InstSetLocal and InstPushLiteral rules for lhs.wp to get a copy of the literal (LBool/LInt).
     
 sem Program
   | Program  loc.wp'     = CAnd @lhs.wp (CEQ (ITopStackIndex 0) (ILit (-1)))
-             body.wp     = @wp'
+             body.wp     = @wp'  -- wp == wp'
                  .length = 0
              lhs.wp      = replace (replaceParamWithOld @nParams @body.wp) Nothing (Just (ITopStackIndex 0, ILit (-1)))
   
 sem Statement
-  | SIfTrueElse  lhs.wp             = CAnd (CGTE (ITopStackIndex 0) (ILit 0))
+  | SIfTrueElse  -- we need these two rules, as inh and syn is automatically converted to chn (and we want to pass the original wp and length, not the synthesized ones from the trueBranch, into the falseBranch) 
+                 falseBranch.wp     = @lhs.wp
+                            .length = @lhs.length
+                 lhs.length         = 1 + max @trueBranch.length @falseBranch.length  -- count one step for checking top of stack
+                 lhs.wp             = CAnd (CGTE (ITopStackIndex 0) (ILit 0))
                                            (COr (CAnd (CStack (ITopStackIndex 0))        (replace @trueBranch.wp  Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))))
                                                 (CAnd (CNot (CStack (ITopStackIndex 0))) (replace @falseBranch.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1))))))
-                 lhs.length         = max @trueBranch.length @falseBranch.length
-                 falseBranch.wp     = @lhs.wp
-                            .wp'    = @lhs.wp'
-                            .length = @lhs.length
-                         
+                 
   | SWhileTrue   lhs.wp = let w0            = CAnd (CNot (CStack (ITopStackIndex 0))) (wp_Syn_Statement $ wrap_Statement (sem_Statement (SInstruction InstPop)) (Inh_Statement {wp_Inh_Statement= @lhs.wp, wp'_Inh_Statement= @lhs.wp', length_Inh_Statement=0})) 
                               newTrueBranch = SInstruction InstPop : @trueBranch.copy
                               ws            = take (1 + max ((bounded - @lhs.length - 1) `div` (@trueBranch.length+1)) 0) (iterate (\w' -> CAnd (CStack (ITopStackIndex 0)) (wp_Syn_StatementList $ wrap_StatementList (sem_StatementList newTrueBranch) (Inh_StatementList {wp_Inh_StatementList=w', wp'_Inh_StatementList= @lhs.wp', length_Inh_StatementList=0}))) w0)
@@ -87,31 +96,46 @@ sem Instruction
                               in  CAnd (CGTE (ITopStackIndex 0) (ILit 0)) (replace first (Just (CReturnValue, CStack (ITopStackIndex 0))) (Just (IReturnValue, IStack (ITopStackIndex 0))))                     
 
 sem Instruction
-  | *  lhs.length = 1
+  | *  lhs.length = 1  -- all instructions are of length 1
                               
 sem StatementList
-  | Cons   tl.wp     = @lhs.wp
-             .wp'    = @lhs.wp'
+  | Cons   -- we need backward chaining here:
+           tl.wp     = @lhs.wp
              .length = @lhs.length + @hd.length
            hd.wp     = @tl.wp  
-             .wp'    = @tl.wp'
              .length = @lhs.length + @tl.length             
            lhs.wp    = @hd.wp
-              .wp'   = @hd.wp'
               
 {
-replaceParamWithOld :: Integer -> Cond -> Cond
+{- | Replaces, in the given condition (boolean expression), all param_0, param_1, ..., param_(given #params - 1) occurrences with a_0, a_1, ..., a_(given #params - 1).
+     (param_i References to (the (current) value of) param i. At the begin of the program these values are the same as the pre-invocation ones, which can be
+      referenced in the specified pre- and postcondition and thus in the resulting weakest precondition and verification condition. To make sure that param_i
+      and a_i reference to the same value, we rename the first.)
+-}     
+replaceParamWithOld :: Integer  -- ^ Number of parameters. 
+                    -> Cond     -- ^ Condition in which occurrences of param_i (0 <= i < #params) will be replaced with a_i.
+                    -> Cond     -- ^ Resulting condition, which all replacements done.
 replaceParamWithOld 0 c = c
 replaceParamWithOld n c = replaceParamWithOld (n-1) (replace c (Just (CParamCurr (n-1), CParamOld (n-1))) (Just (IParamCurr (n-1), IParamOld (n-1))))
 
-replace :: Cond -> Maybe (Cond, Cond) -> Maybe (IExpr, IExpr) -> Cond
+-- Replaces given boolean and int expressions with (other) given boolean and int expressions in the given condition (boolean expression). 
+replace :: Cond                  -- ^ Condition in which the given replacements will be done. 
+        -> Maybe (Cond, Cond)    -- ^ If Just: all occurrences of the first element in given condition will be replaced with the second element. If Nothing: no boolean expressions will be replaced.
+        -> Maybe (IExpr, IExpr)  -- ^ If Just: all occurrences of the first element in given condition will be replaced with the second element. If Nothing: no int expressions will be replaced.
+        -> Cond                  -- ^ Resulting condition, with all replacements done.
 replace c toReplaceWithC toReplaceWithI = copy_Syn_Cond $ wrap_Cond (sem_Cond c) (Inh_Cond {toReplaceWithC_Inh_Cond=toReplaceWithC, toReplaceWithI_Inh_Cond=toReplaceWithI})
 
-binaryOpI :: Cond -> (IExpr -> IExpr -> IExpr) -> Cond
+-- | Implements the wp rule for given binary operator that has int as result type (+, -, ...).
+binaryOpI :: Cond                       -- ^ The (intermediate) condition the wp rule will be applied on.
+          -> (IExpr -> IExpr -> IExpr)  -- ^ The binary operator (result type: int).
+          -> Cond                       -- ^ The resulting condition, with the wp rule applied on.
 binaryOpI c op = let first = replace c Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
                  in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first Nothing (Just (IStack (ITopStackIndex (-1)), op (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))))
 
-binaryOpB :: Cond -> (IExpr -> IExpr -> Cond) -> Cond                 
+-- | Implements the wp rule for given binary operator that has bool as result type (>, >=, ...).
+binaryOpB :: Cond                      -- ^ The (intermediate) condition the wp rule will be applied on.
+          -> (IExpr -> IExpr -> Cond)  -- ^ The binary operator (result type: bool).
+          -> Cond                      -- ^ The resulting condition, with the wp rule applied on.
 binaryOpB c op = let first = replace c Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))
                  in  CAnd (CGTE (ITopStackIndex 0) (ILit 1)) (replace first (Just (CStack (ITopStackIndex (-1)), op (IStack (ITopStackIndex (-1))) (IStack (ITopStackIndex 0)))) Nothing)
 }
