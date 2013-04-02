@@ -19,8 +19,8 @@ while local1 > 0
   local1 := local1 - 1
   local2 := 0
   while local2 > 0
-    local0 := local0 + 1
     local2 := local2 - 1
+    local0 := local0 + 1
 return local1
 -}
 
@@ -39,10 +39,14 @@ body = [SInstruction (InstSetLocal 0 (LInt 0)),
                       SInstruction (InstLoadLocal 2),
                       SInstruction (InstPushLiteral (LInt 0)),
                       SInstruction (InstGT),
-                      SWhileTrue   [SInstruction (InstLoadLocal 0),
+                      SWhileTrue   [SInstruction (InstLoadLocal 2),
+                                    SInstruction (InstPushLiteral (LInt 1)),
+                                    SInstruction (InstMin),
+                                    SInstruction (InstStoreLocal 2),
+                                    SInstruction (InstLoadLocal 0),
                                     SInstruction (InstPushLiteral (LInt 1)),
                                     SInstruction (InstAdd),
-                                    SInstruction (InstStoreLocal 1),
+                                    SInstruction (InstStoreLocal 0),
                                     SInstruction (InstLoadLocal 2),
                                     SInstruction (InstPushLiteral (LInt 0)),
                                     SInstruction (InstGT)],
@@ -51,7 +55,6 @@ body = [SInstruction (InstSetLocal 0 (LInt 0)),
                       SInstruction (InstGT)],
         SInstruction (InstLoadLocal 0),
         SInstruction (Instreturn)]
-
 
 program :: Program
 program = Program 1 3 body
