@@ -119,10 +119,10 @@ verify :: Cond            -- ^ Precondition of specification.
        -> Program         -- ^ Program of specification.
        -> Cond            -- ^ Postcondition of specification.
        -> Symbolic SBool  -- ^ Resulting verification condition.
-verify pre program@(Program nParams _ _) post = let wp = driver [] 0 (NumberOfLoops.numberOfLoops_Syn_Program $ NumberOfLoops.wrap_Program (NumberOfLoops.sem_Program program) (NumberOfLoops.Inh_Program {}))
+verify pre program@(Program nParams _ _) post = let wp = driver [] 0 (NumberOfLoops.numberOfLoops_Syn_Program $ NumberOfLoops.wrap_Program (NumberOfLoops.sem_Program program) (NumberOfLoops.Inh_Program {}), (-1))
                                                 in  if   isNothing wp
                                                     then error errorExceedsBound 
-                                                    else let vc = CImplies pre (fromJust wp)
+                                                    else let vc = CImplies pre (fst $ fromJust wp)
                                                          in  if   isExternal vc 
                                                              then let (paramsB, paramsI) = extract vc
                                                                       intersect = Set.intersection paramsB paramsI
@@ -136,15 +136,15 @@ verify pre program@(Program nParams _ _) post = let wp = driver [] 0 (NumberOfLo
                                                                                  convertToSBV vc mB mI
                                                                      else error $ printf errorSomeParamsBoolAndInt (show intersect)                                                                                                                     
                                                              else error errorInternal
-  where driver h _ 0 = let (wp', length') = wp program post h
-                       in  if   length' <= bound
-                           then (Just wp')
-                           else Nothing
-        driver h i n = let wpN = driver (h ++ [i]) 0 (n-1)
-                       in  if   isNothing wpN
-                           then wpN  -- Nothing
-                           else let wpN' = fromJust wpN
-                                    wp' = driver h (i+1) n
-                                in  if   isNothing wp'
-                                    then wpN
-                                    else Just (CAnd wpN' (fromJust wp'))                             
+  where driver h _ (0, pl) = let wpl@(wp', length') = wp program post h
+                             in  if   pl < length' && length' <= bound
+                                 then Just wpl
+                                 else Nothing
+        driver h i (n, pl) = let wpN = driver (h ++ [i]) 0 (n-1, pl)
+                             in  if   isNothing wpN
+                                 then wpN  -- Nothing
+                                 else let (wpN', pl') = fromJust wpN
+                                          wp'         = driver h (i+1) (n, pl')
+                                      in  if   isNothing wp'
+                                          then Just (wpN', -1)
+                                          else Just (CAnd wpN' (fst $ fromJust wp'), (-1))                             
