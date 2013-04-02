@@ -35,9 +35,9 @@ import           Text.Printf
 
 
 -- | Upper bound for bounded verification.  
-bound = 28
+bound = 100
 
-errorExceedsBound         = "Program exceeds upper bound, increase the upper bound"  
+errorExceedsBound         = "All executions exceed upper bound, increase the upper bound"  
 errorInternal             = "Program incorrect, wp contains references to internal (stack) data"
 errorSomeParamsBoolAndInt = "These parameters are used as bool and int: %s"
 
