@@ -35,7 +35,8 @@ body = [SInstruction (InstSetLocal 0 (LInt 0)),  -- local0 := 0
                       SInstruction (InstPushLiteral (LInt 1)), -- push 1
                       SInstruction (InstMin),                  -- local1 - 1
                       SInstruction (InstStoreLocal 1),         -- local1 := local1 - 1
-                      SInstruction (InstSetLocal 2 (LInt 0)),  -- local2 := 0
+                      SInstruction (InstLoadParam 0),          -- push param0
+                      SInstruction (InstStoreLocal 2),         -- local2 := param0
                       SInstruction (InstLoadLocal 2),          -- push local2
                       SInstruction (InstPushLiteral (LInt 0)), -- push 0
                       SInstruction (InstGT),                   -- while local2 > 0
