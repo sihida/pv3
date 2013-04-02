@@ -25,36 +25,36 @@ return local1
 -}
 
 body :: StatementList
-body = [SInstruction (InstSetLocal 0 (LInt 0)),
-        SInstruction (InstLoadParam 0),
-        SInstruction (InstStoreLocal 1),
-        SInstruction (InstLoadLocal 1),
-        SInstruction (InstPushLiteral (LInt 0)),
-        SInstruction (InstGT),
-        SWhileTrue   [SInstruction (InstLoadLocal 1),
-                      SInstruction (InstPushLiteral (LInt 1)),
-                      SInstruction (InstMin),
-                      SInstruction (InstStoreLocal 1),
-                      SInstruction (InstSetLocal 2 (LInt 0)),
-                      SInstruction (InstLoadLocal 2),
-                      SInstruction (InstPushLiteral (LInt 0)),
-                      SInstruction (InstGT),
-                      SWhileTrue   [SInstruction (InstLoadLocal 2),
-                                    SInstruction (InstPushLiteral (LInt 1)),
-                                    SInstruction (InstMin),
-                                    SInstruction (InstStoreLocal 2),
-                                    SInstruction (InstLoadLocal 0),
-                                    SInstruction (InstPushLiteral (LInt 1)),
-                                    SInstruction (InstAdd),
-                                    SInstruction (InstStoreLocal 0),
-                                    SInstruction (InstLoadLocal 2),
-                                    SInstruction (InstPushLiteral (LInt 0)),
-                                    SInstruction (InstGT)],
-                      SInstruction (InstLoadLocal 1),
-                      SInstruction (InstPushLiteral (LInt 0)),
-                      SInstruction (InstGT)],
-        SInstruction (InstLoadLocal 0),
-        SInstruction (Instreturn)]
+body = [SInstruction (InstSetLocal 0 (LInt 0)),  -- local0 := 0
+        SInstruction (InstLoadParam 0),          -- push param0
+        SInstruction (InstStoreLocal 1),         -- local1 := param0
+        SInstruction (InstLoadLocal 1),          -- push local1
+        SInstruction (InstPushLiteral (LInt 0)), -- push 0
+        SInstruction (InstGT),                   -- while local1 > 0
+        SWhileTrue   [SInstruction (InstLoadLocal 1),          -- push local1
+                      SInstruction (InstPushLiteral (LInt 1)), -- push 1
+                      SInstruction (InstMin),                  -- local1 - 1
+                      SInstruction (InstStoreLocal 1),         -- local1 := local1 - 1
+                      SInstruction (InstSetLocal 2 (LInt 0)),  -- local2 := 0
+                      SInstruction (InstLoadLocal 2),          -- push local2
+                      SInstruction (InstPushLiteral (LInt 0)), -- push 0
+                      SInstruction (InstGT),                   -- while local2 > 0
+                      SWhileTrue   [SInstruction (InstLoadLocal 2),          -- push local2
+                                    SInstruction (InstPushLiteral (LInt 1)), -- push 1
+                                    SInstruction (InstMin),                  -- local2 - 1
+                                    SInstruction (InstStoreLocal 2),         -- local2 := local2 -1
+                                    SInstruction (InstLoadLocal 0),          -- push local0
+                                    SInstruction (InstPushLiteral (LInt 1)), -- push 1
+                                    SInstruction (InstAdd),                  -- local0 + 1
+                                    SInstruction (InstStoreLocal 0),         -- local0 := local0 + 1
+                                    SInstruction (InstLoadLocal 2),          -- push local2
+                                    SInstruction (InstPushLiteral (LInt 0)), -- push 0
+                                    SInstruction (InstGT)],                  -- local > 0
+                      SInstruction (InstLoadLocal 1),          -- push local1
+                      SInstruction (InstPushLiteral (LInt 0)), -- push 0
+                      SInstruction (InstGT)],                  -- local1 > 0
+        SInstruction (InstLoadLocal 0),          -- push local0
+        SInstruction (Instreturn)]               -- return local0
 
 program :: Program
 program = Program 1 3 body
