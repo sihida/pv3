@@ -14,7 +14,8 @@ program = Program 2 2 [
   SInstruction (InstEQ),                        -- *pop* 10 == 10
   SIfTrueElse                                   -- *pop* if
     [SInstruction (InstSetLocal 0 (LInt 10))]   -- then: local_0 := 10
-    [SInstruction (InstSetLocal 0 (LInt 11))],  -- else: local_0 := 11
+    [SInstruction (InstSetLocal 0 (LInt 11)),   -- else: local_0 := 11
+     SInstruction (InstPushLiteral (LInt 1))],  --       *push* 1
   SInstruction (InstLoadParam 0),               -- *push* param_0
   SInstruction (InstLoadLocal 0),               -- *push* 10
   SInstruction (InstAdd),                       -- *pop* param_0 + 10
@@ -28,10 +29,10 @@ program = Program 2 2 [
     []                                          -- then
     [SInstruction (InstPushLiteral (LInt 0)),   -- else: *push* 0
      SInstruction (Instreturn)],                --       return 0
-  SInstruction (InstLoadParam 0),               -- *push* param_0
+  SInstruction (InstLoadParam 1),               -- *push* param_1
   SInstruction (InstPushLiteral (LInt 2)),      -- *push* 2
-  SInstruction (InstMul),                       -- *pop* param_0 * 2
-  SInstruction (Instreturn)]                    -- return param_0 * 2
+  SInstruction (InstMul),                       -- *pop* param_1 * 2
+  SInstruction (Instreturn)]                    -- return param_1 * 2
                        
 -- ((param_0 >= 10) ==> return == ((param_0 + 10) * 2)) /\ ((param_0 < 10) ==> return == 0)
 postcondition :: Cond
