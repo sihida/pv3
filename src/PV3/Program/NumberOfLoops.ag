@@ -1,0 +1,21 @@
+{- |
+Attribute grammar for calculating the number of loops in a program.
+
+Part of PV - Project 3.
+
+Authors: Jaap van der Plas and Danny Bergsma
+Version: 0.1, 2 April 2013
+-}
+
+module {PV3.Program.NumberOfLoops}{}
+{
+import PV3.Program.ProgramAST
+}
+
+include "ProgramAST.ag"  -- semantics in this attribute grammar are defined over the datatypes from ProgramAST
+
+attr Program Statement Instruction StatementList
+  syn numberOfLoops use {+} {0} :: Int
+  
+sem Statement
+  | SWhileTrue  lhs.numberOfLoops = @trueBranch.numberOfLoops + 1

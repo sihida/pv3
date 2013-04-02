@@ -14,56 +14,48 @@ import PV3.Condition.Replace
 import PV3.Program.ProgramAST
 }
 
-{
--- | Maximum steps (instructions) for bounded verification.
-bounded :: Int
-bounded = 19
-}
-
 include "Program/ProgramAST.ag"  -- semantics in this attribute grammar are defined over the datatypes from ProgramAST
 
 attr Program Statement Instruction StatementList
-  inh wp                  :: Cond  -- ^ (intermediate) weakest precondition that will be transformed...
-  syn wp                  :: Cond  -- ^ to (possibly another intermediate) weakest precondition
+  inh wp                  :: Cond     -- ^ (intermediate) weakest precondition that will be transformed...
+  syn wp                  :: Cond     -- ^ to (possibly another intermediate) weakest precondition
+    
+attr Program Statement StatementList
+  chn loopIterations      :: {[Int]}  -- ^ Holds initially the number of iterations of each loop; each loop ``pops'' its number of iterations from the list. Used for bounded verification. 
   
 attr Statement Instruction StatementList
   inh wp'                 :: Cond  -- ^ Original postcondition of program (used for ``return from anywhere''). 
 
   syn copy                :: self  -- ^ Used in the SWhileTrue rule for @lhs.wp to get a copy (of type [Statement]) of the trueBranch.
   
-attr Instruction
-  syn length              :: Int  -- ^ #instructions (steps) of this instruction. Used for bounded verification.
+attr Program Instruction Statement
+  syn length              :: Int  -- ^ #instructions (steps) of this instruction/statement. Used for bounded verification.
     
 attr StatementList
-  inh length              :: Int  -- ^ #instructions (steps) of all statements/instructions in front of the hd (head). Used for bounded verification.
   syn length use {+} {0}  :: Int  -- ^ #instructions (steps) of all statements/instructions in hd + tl (i.e. the full (sub)list). Used for bounded verification.
-  
-attr Statement
-  inh length              :: Int  -- ^ #instructions (steps) of all statements/instructions in front and at the back of the statement. Used for bounded verification. 
-  syn length              :: Int  -- ^ #instructions (steps) of all (sub)statements/instructions in statement. Used for bounded verification.
-  
+    
 attr Literal
   syn copy                :: self  -- ^ Used in the InstSetLocal and InstPushLiteral rules for lhs.wp to get a copy of the literal (LBool/LInt).
     
 sem Program
-  | Program  loc.wp'     = CAnd @lhs.wp (CEQ (ITopStackIndex 0) (ILit (-1)))
-             body.wp     = @wp'  -- wp == wp'
-                 .length = 0
-             lhs.wp      = replace (replaceParamWithOld @nParams @body.wp) Nothing (Just (ITopStackIndex 0, ILit (-1)))
+  | Program  loc.wp' = CAnd @lhs.wp (CEQ (ITopStackIndex 0) (ILit (-1)))
+             body.wp = @wp'  -- wp == wp'
+             lhs.wp  = replace (replaceParamWithOld @nParams @body.wp) Nothing (Just (ITopStackIndex 0, ILit (-1)))
   
 sem Statement
-  | SIfTrueElse  -- we need these two rules, as inh and syn is automatically converted to chn (and we want to pass the original wp and length, not the synthesized ones from the trueBranch, into the falseBranch) 
-                 falseBranch.wp     = @lhs.wp
-                            .length = @lhs.length
-                 lhs.length         = 1 + max @trueBranch.length @falseBranch.length  -- count one step for checking top of stack
-                 lhs.wp             = CAnd (CGTE (ITopStackIndex 0) (ILit 0))
-                                           (COr (CAnd (CStack (ITopStackIndex 0))        (replace @trueBranch.wp  Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))))
-                                                (CAnd (CNot (CStack (ITopStackIndex 0))) (replace @falseBranch.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1))))))
+  | SIfTrueElse  -- we need these rule, as inh and syn is automatically converted to chn (and we want to pass the original wp, not the synthesized one from the trueBranch, down to the falseBranch) 
+                 falseBranch.wp = @lhs.wp
+                 lhs.length     = 1 + max @trueBranch.length @falseBranch.length  -- count one step for checking top of stack
+                    .wp         = CAnd (CGTE (ITopStackIndex 0) (ILit 0))
+                                       (COr (CAnd (CStack (ITopStackIndex 0))        (replace @trueBranch.wp  Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1)))))
+                                            (CAnd (CNot (CStack (ITopStackIndex 0))) (replace @falseBranch.wp Nothing (Just (ITopStackIndex 0, ITopStackIndex (-1))))))
                  
-  | SWhileTrue   lhs.wp = let w0            = CImplies (CNot (CStack (ITopStackIndex 0))) (wp_Syn_Statement $ wrap_Statement (sem_Statement (SInstruction InstPop)) (Inh_Statement {wp_Inh_Statement= @lhs.wp, wp'_Inh_Statement= @lhs.wp', length_Inh_Statement=0})) 
-                              newTrueBranch = SInstruction InstPop : @trueBranch.copy
-                              ws            = take (1 + max ((bounded - @lhs.length - 1) `div` (@trueBranch.length+1)) 0) (iterate (\w' -> CImplies (CStack (ITopStackIndex 0)) (wp_Syn_StatementList $ wrap_StatementList (sem_StatementList newTrueBranch) (Inh_StatementList {wp_Inh_StatementList=w', wp'_Inh_StatementList= @lhs.wp', length_Inh_StatementList=0}))) w0)
-                          in  foldl1 CAnd ws
+  | SWhileTrue   trueBranch.loopIterations = tail @lhs.loopIterations
+                 lhs.wp                    = let w0            = CImplies (CNot (CStack (ITopStackIndex 0))) (wp_Syn_Statement $ wrap_Statement (sem_Statement (SInstruction InstPop)) (Inh_Statement {wp_Inh_Statement= @lhs.wp, wp'_Inh_Statement= @lhs.wp', loopIterations_Inh_Statement=[]})) 
+                                                 newTrueBranch = SInstruction InstPop : @trueBranch.copy
+                                                 ws            = take (head @lhs.loopIterations + 1) (iterate (\w' -> CImplies (CStack (ITopStackIndex 0)) (wp_Syn_StatementList $ wrap_StatementList (sem_StatementList newTrueBranch) (Inh_StatementList {wp_Inh_StatementList=w', wp'_Inh_StatementList= @lhs.wp', loopIterations_Inh_StatementList= tail @lhs.loopIterations}))) w0)
+                                             in  foldl1 CAnd ws
+                    .length                = 1 + head @lhs.loopIterations * (@trueBranch.length + 1)  -- count one step for POP in w_0, count one step for each POP in w_(k+1)
                               
 sem Instruction
   | InstSetLocal     lhs.wp = case @lit.copy of
@@ -100,11 +92,9 @@ sem Instruction
                               
 sem StatementList
   | Cons   -- we need backward chaining here:
-           tl.wp     = @lhs.wp
-             .length = @lhs.length + @hd.length
-           hd.wp     = @tl.wp  
-             .length = @lhs.length + @tl.length             
-           lhs.wp    = @hd.wp
+           tl.wp  = @lhs.wp
+           hd.wp  = @tl.wp        
+           lhs.wp = @hd.wp
               
 {
 {- | Replaces, in the given condition (boolean expression), all param_0, param_1, ..., param_(given #params - 1) occurrences with a_0, a_1, ..., a_(given #params - 1).

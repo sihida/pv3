@@ -38,4 +38,4 @@ program = Program 1 2 body
 postcondition :: Cond
 postcondition = CEQ IReturnValue (IParamOld 0) 
 precondition :: Cond
-precondition = CLit True
+precondition = CGTE (IParamOld 0) (ILit 0)

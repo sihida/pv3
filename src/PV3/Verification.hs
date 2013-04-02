@@ -20,18 +20,24 @@ import qualified PV3.Condition.ConvertToSBV as Convert
 import qualified PV3.Condition.External     as External
 import qualified PV3.Condition.Extract      as Extract
 import           PV3.Program.ProgramAST
+import qualified PV3.Program.NumberOfLoops  as NumberOfLoops
 import           PV3.WP
 
 import           Data.SBV
 
 import qualified Data.Map                   as Map 
+import           Data.Maybe
 import qualified Data.Set                   as Set
 import           Text.Printf
 
 
   -- Constants
 
-  
+
+-- | Upper bound for bounded verification.  
+bound = 28
+
+errorExceedsBound         = "Program exceeds upper bound, increase the upper bound"  
 errorInternal             = "Program incorrect, wp contains references to internal (stack) data"
 errorSomeParamsBoolAndInt = "These parameters are used as bool and int: %s"
 
@@ -40,10 +46,12 @@ errorSomeParamsBoolAndInt = "These parameters are used as bool and int: %s"
 
   
 -- | Calculates weakest precondition of given program - postcondition combination.
-wp   :: Program  -- ^ Program the weakest precondition will be calculated over.
-     -> Cond     -- ^ Postcondition used as ``start'' condition in het calculation.
-     -> Cond     -- ^ Resulting weakest precondition (wrt params).
-wp   p  q = wp_Syn_Program       $ wrap_Program       (sem_Program p)        (Inh_Program       {wp_Inh_Program=q})
+wp   :: Program      -- ^ Program the weakest precondition will be calculated over.
+     -> Cond         -- ^ Postcondition used as ``start'' condition in het calculation.
+     -> [Int]        -- ^ Holds the numbers of all loop iterations.
+     -> (Cond, Int)  -- ^ Resulting weakest precondition (wrt params) and total number instructions (steps) in considered execution.
+wp   p  q l = let wp' =              wrap_Program       (sem_Program p)        (Inh_Program       {wp_Inh_Program=q,       loopIterations_Inh_Program=l})
+              in  (wp_Syn_Program wp', length_Syn_Program wp')
 
 -- wpI, wpS and wpSS are never used, but are useful for (future) debug purposes...
 
@@ -51,19 +59,21 @@ wp   p  q = wp_Syn_Program       $ wrap_Program       (sem_Program p)        (In
 wpI  :: Instruction  -- ^ Instruction the weakest precondition will be calculated over. 
      -> Cond         -- ^ Postcondition used as ``start'' condition in the calculation.
      -> Cond         -- ^ Resulting weakest precondition (wrt params).
-wpI  i  q = wp_Syn_Instruction   $ wrap_Instruction   (sem_Instruction i)    (Inh_Instruction   {wp_Inh_Instruction=q,   wp'_Inh_Instruction=q})
+wpI  i  q   = wp_Syn_Instruction   $ wrap_Instruction   (sem_Instruction i)    (Inh_Instruction   {wp_Inh_Instruction=q,   wp'_Inh_Instruction=q})
 
 -- | Calculates weakest precondition of given statement - postcondition combination.
 wpS  :: Statement  -- ^ Statement the weakest precondition will be calculated over.
      -> Cond       -- ^ Postcondition used as ``start'' condition in the calculation.
+     -> [Int]      -- ^ Holds the numbers of all loop iterations.
      -> Cond       -- ^ Resulting weakest precondition (wrt params).
-wpS  s  q = wp_Syn_Statement     $ wrap_Statement     (sem_Statement s)      (Inh_Statement     {wp_Inh_Statement=q,     wp'_Inh_Statement=q,     length_Inh_Statement=0})
+wpS  s  q l = wp_Syn_Statement     $ wrap_Statement     (sem_Statement s)      (Inh_Statement     {wp_Inh_Statement=q,     wp'_Inh_Statement=q,         loopIterations_Inh_Statement=l})
 
 -- | Calculates weakest precondition of given statements - postcondition combination.
 wpSS :: StatementList  -- ^ Statements the weakest precondition will be calculated over.
      -> Cond           -- ^ Postcondition used as ``start'' condition in the calculation.
+     -> [Int]          -- ^ Holds the numbers of all loop iterations.
      -> Cond           -- ^ Resulting weakest precondition (wrt params). 
-wpSS ss q = wp_Syn_StatementList $ wrap_StatementList (sem_StatementList ss) (Inh_StatementList {wp_Inh_StatementList=q, wp'_Inh_StatementList=q, length_Inh_StatementList=0})
+wpSS ss q l = wp_Syn_StatementList $ wrap_StatementList (sem_StatementList ss) (Inh_StatementList {wp_Inh_StatementList=q, wp'_Inh_StatementList=q,     loopIterations_Inh_StatementList=l})
 
 
   -- External check
@@ -97,6 +107,7 @@ extract c = let syn = Extract.wrap_Cond (Extract.sem_Cond c) (Extract.Inh_Cond {
 
   -- Verify
 
+
   
 {- | 
 Calculates the verification condition (in Data.SBV) format wrt the given specification (precondition - program - postcondition combination), 
@@ -108,17 +119,32 @@ verify :: Cond            -- ^ Precondition of specification.
        -> Program         -- ^ Program of specification.
        -> Cond            -- ^ Postcondition of specification.
        -> Symbolic SBool  -- ^ Resulting verification condition.
-verify pre program@(Program nParams _ _) post = let vc = CImplies pre (wp program post)
-                                                in  if   isExternal vc 
-                                                    then let (paramsB, paramsI) = extract vc
-                                                             intersect = Set.intersection paramsB paramsI
-                                                         in if   Set.null intersect                                                          -- VC not "mistyped"?
-                                                            then let paramsB' = Set.toList paramsB
-                                                                     paramsI' = Set.toList paramsI
-                                                                 in  do vB <- mapM (\i -> sBool    ("a" ++ show i)) paramsB'                 -- declare boolean params
-                                                                        vI <- mapM (\i -> sInteger ("a" ++ show i)) paramsI'                 -- declare int params
-                                                                        let mB = Map.fromList $ zip (map (\i -> "a" ++ show i) paramsB') vB  -- build boolean environment
-                                                                            mI = Map.fromList $ zip (map (\i -> "a" ++ show i) paramsI') vI  -- build int environment
-                                                                        convertToSBV vc mB mI
-                                                            else error $ printf errorSomeParamsBoolAndInt (show intersect)                                                                                                                     
-                                                    else error errorInternal
+verify pre program@(Program nParams _ _) post = let wp = driver [] 0 (NumberOfLoops.numberOfLoops_Syn_Program $ NumberOfLoops.wrap_Program (NumberOfLoops.sem_Program program) (NumberOfLoops.Inh_Program {}))
+                                                in  if   isNothing wp
+                                                    then error errorExceedsBound 
+                                                    else let vc = CImplies pre (fromJust wp)
+                                                         in  if   isExternal vc 
+                                                             then let (paramsB, paramsI) = extract vc
+                                                                      intersect = Set.intersection paramsB paramsI
+                                                                  in if   Set.null intersect                                                          -- VC not "mistyped"?
+                                                                     then let paramsB' = Set.toList paramsB
+                                                                              paramsI' = Set.toList paramsI
+                                                                          in  do vB <- mapM (\i -> sBool    ("a" ++ show i)) paramsB'                 -- declare boolean params
+                                                                                 vI <- mapM (\i -> sInteger ("a" ++ show i)) paramsI'                 -- declare int params
+                                                                                 let mB = Map.fromList $ zip (map (\i -> "a" ++ show i) paramsB') vB  -- build boolean environment
+                                                                                     mI = Map.fromList $ zip (map (\i -> "a" ++ show i) paramsI') vI  -- build int environment
+                                                                                 convertToSBV vc mB mI
+                                                                     else error $ printf errorSomeParamsBoolAndInt (show intersect)                                                                                                                     
+                                                             else error errorInternal
+  where driver h _ 0 = let (wp', length') = wp program post h
+                       in  if   length' <= bound
+                           then (Just wp')
+                           else Nothing
+        driver h i n = let wpN = driver (h ++ [i]) 0 (n-1)
+                       in  if   isNothing wpN
+                           then wpN  -- Nothing
+                           else let wpN' = fromJust wpN
+                                    wp' = driver h (i+1) n
+                                in  if   isNothing wp'
+                                    then wpN
+                                    else Just (CAnd wpN' (fromJust wp'))                             
