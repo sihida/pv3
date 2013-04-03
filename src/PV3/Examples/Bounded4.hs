@@ -24,9 +24,9 @@ body = [SInstruction (InstSetLocal  0 (LInt 0)),                             -- 
                       SInstruction (InstLoadParam 0),                        --        push param0
                       SInstruction InstLT,                                   --        local0 < param0
                       SWhileTrue   [SInstruction (InstLoadLocal 0),          --        while: push local0
-                                    SInstruction (InstPushLiteral (LInt 1)), --               push 1
-                                    SInstruction InstAdd,                    --               local0 + 1
-                                    SInstruction (InstStoreLocal 0),         --               local0 := local0 + 1
+                                    SInstruction (InstLoadLocal 0),          --               push local0
+                                    SInstruction InstAdd,                    --               local0 + local 0
+                                    SInstruction (InstStoreLocal 0),         --               local0 := local0 + local0
                                     SInstruction (InstLoadLocal 0),          --               push local0
                                     SInstruction (InstLoadParam 0),          --               push param0
                                     SInstruction InstLT],                    --               local0 < param0
