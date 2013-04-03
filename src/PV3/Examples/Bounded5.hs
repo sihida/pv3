@@ -1,5 +1,5 @@
 {- |
-Example that squares the first (int) parameter, using two loops. Combination of Bounded and Bounded2.
+Example that squares the first (int) parameter, using one outer and one inner loop.
 
 Part of PV - Project 3.
 

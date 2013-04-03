@@ -136,8 +136,9 @@ verify pre program@(Program nParams _ _) post = let wp = driver [] 0 (NumberOfLo
                                                                                  convertToSBV vc mB mI
                                                                      else error $ printf errorSomeParamsBoolAndInt (show intersect)                                                                                                                     
                                                              else error errorInternal
-  where driver h _ (0, pl) = let wpl@(wp', length') = wp program post h
-                             in  if   pl < length' && length' <= bound
+  where -- driver generates one big conjunction with as conjuncts the wp of all possible executions with execution length <= bound
+        driver h _ (0, pl) = let wpl@(wp', length') = wp program post h
+                             in  if   pl < length' && length' <= bound  -- pl < length' assures that we are not trying to increase the # iterations of an inner loop that is not being executed at all (as the # iterations of an outer loop of this inner loop is 0)
                                  then Just wpl
                                  else Nothing
         driver h i (n, pl) = let wpN = driver (h ++ [i]) 0 (n-1, pl)
@@ -146,5 +147,5 @@ verify pre program@(Program nParams _ _) post = let wp = driver [] 0 (NumberOfLo
                                  else let (wpN', pl') = fromJust wpN
                                           wp'         = driver h (i+1) (n, pl')
                                       in  if   isNothing wp'
-                                          then Just (wpN', pl')
+                                          then wpN
                                           else Just (CAnd wpN' (fst $ fromJust wp'), pl')                             

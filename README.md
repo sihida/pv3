@@ -53,7 +53,7 @@ Various errors may also be given (see features).
 cabal
 uuagc
 uuagc-cabal
-sbv-2.9 (Z3 does not seem to work with 2.10!)
+sbv-2.9 (Z3(-4.3.0) does not seem to work with 2.10!)
 
 Z3-4.3.0
 
