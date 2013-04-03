@@ -18,12 +18,10 @@ import PV3.Program.ProgramAST
     var x0 = 0;
     var x1 = a0;
     while (x1 > 0) {
-      x1--;
-      var x2 = 0;
-      while (x2 > 0) {
-        x2--;
-        x0++;
+      while (x0 < a0) {
+        x0 = x0 + x0;
       }
+      x1--;
     }
     x1 = 0;
     var x2 = 0;
