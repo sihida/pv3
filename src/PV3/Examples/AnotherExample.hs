@@ -1,5 +1,5 @@
 {- |
-Example that squares the first (int) parameter, using one outer and one inner loop.
+Example that uses most instructions and the control structures. The program multiplies its second argument by two.
 
 Part of PV - Project 3.
 
