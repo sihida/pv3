@@ -146,5 +146,5 @@ verify pre program@(Program nParams _ _) post = let wp = driver [] 0 (NumberOfLo
                                  else let (wpN', pl') = fromJust wpN
                                           wp'         = driver h (i+1) (n, pl')
                                       in  if   isNothing wp'
-                                          then Just (wpN', -1)
-                                          else Just (CAnd wpN' (fst $ fromJust wp'), (-1))                             
+                                          then Just (wpN', pl')
+                                          else Just (CAnd wpN' (fst $ fromJust wp'), pl')                             
