@@ -62,7 +62,7 @@ These are our weakest-precondition rules \smiley:
 {T := T-1}
 {Q[T-1/T] \wedge T >= 0}
 \semwprule{ADD}           
-{stack_(T-1) := stack_{T-1} + stack_T; T := T-1}
+{stack_{T-1} := stack_{T-1} + stack_T; T := T-1}
 {(Q[(T-1)/T])[(stack_{T-1} + stack_T)/stack_{T-1}] \wedge T >= 1}
 \semwprule{MIN}           
 {stack_{T-1} := stack_{T-1} - stack_T; T := T-1}
@@ -85,6 +85,9 @@ These are our weakest-precondition rules \smiley:
 \semwprule{GTE}           
 {stack_{T-1} := stack_{T-1} >= stack_T; T := T-1}
 {(Q[(T-1)/T])[(stack_{T-1} >= stack_T)/stack_{T-1}] \wedge T >= 1}
+\semwprule{EQUIV}           
+{stack_{T-1} := stack_{T-1} \leftrightarrow stack_T; T := T-1}
+{(Q[(T-1)/T])[(stack_{T-1} \leftrightarrow stack_T)/stack_{T-1}] \wedge T >= 1}
 \semwprule{return}
 {return := stack_T; T := T-1}
 {(Q[T-1/T])[stack_T/return] \wedge T >= 0}
@@ -100,8 +103,8 @@ These are our weakest-precondition rules \smiley:
 \end{aligned}
 }
 
-\wprule{prog P ($n$) s}
-{(wp \; s \; (Q \wedge T == -1)[a_0/param_0][a_1/param_1] \dots [a_{n-1}/param_{n-1}])[-1/T]}
+\wprule{prog P $n$ s}
+{((wp \; s \; (Q \wedge T == -1))[a_0/param_0][a_1/param_1] \dots [a_{n-1}/param_{n-1}])[-1/T]}
 
 
 
