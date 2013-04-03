@@ -22,6 +22,12 @@
   \\wp \; (\texttt{#1}) \; Q \; &=_{def} \; #3
   \end{align*}
 }
+\newcommand{\semwprulex}[3]{
+  \begin{align*}
+  \texttt{#1} &=_{sem} \{#2\}
+  \\wp \; (\texttt{#1}) \; (Q, Q') \; &=_{def} \; #3
+  \end{align*}
+}
 \newcommand{\wprule}[2]{
   \begin{align*}
   &wp \; (\texttt{#1}) \; Q \; =_{def} \; #2
@@ -102,10 +108,10 @@ int p (int a) {
 The specification for the example is:
 \pagebreak
 \\ \centerline{$pre: 6 \leq a \leq 10$}
-\\ \centerline{$post: \exists \ 6 \leq x \leq 10: return = x$}
-\\
+\\ \centerline{$post: \exists \ 6 \leq x \leq 10: return == x$}
+
 When we verify this example, we indeed prove the specification correct: \texttt{{Q.E.D.}} When we change the postcondition to
-\\ \centerline{$post: \exists \ 7 \leq x \leq 10: return = x$}
+\\ \centerline{$post: \exists \ 7 \leq x \leq 10: return == x$}
 we get an counterexample, indicating that the specification is incorrect:
 \begin{verbatim}
 Falsifiable. Counter-example:
@@ -225,7 +231,7 @@ The actual verification consists of these steps:
 \item \texttt{Extract.ag}: extracting the parameter type information from the VC
 \item \texttt{Verification.hs}: pre-filling the environment(s)
 \item \texttt{ConvertToSBV.ag}: converting the VC to a \texttt{Symbolic} SBV computation, using the pre-filled environment(s)
-\item \texttt{Main.hs}: calling SBV's prove function to prove the \texttt{Symbolic} VC from step 6 correct
+\item \texttt{Main.hs}: calling SBV's prove function to prove the VC from step 6 correct
 \item SBV: calling Z3 and returning the result of the verification (correct or not); if not correct, giving counterexample
 \item \texttt{Main.hs}: outputting result of the verification and counterexample, if present
 \end{enumerate}
@@ -247,7 +253,7 @@ P (0) {
 \end{verbatim}
 
 with as postcondition:
-\\ \centerline{$post: return = 2$}
+\\ \centerline{$post: return == 2$}
 
 The weakest precondition with respect to this program and postcondition refers to $stack_T$, as the $return$ term in the postcondition is replaced with $stack_T$.
 This indicates that the program is malformed and no specification for the program can be proven correct. Every weakest precondition (and, consequently, VC), with
@@ -255,9 +261,68 @@ respect to a given program, that refers to internal (stack) data indicates that 
 proven correct. So, if the VC is not ``external'', we do not need to convert it to SBV and give it to Z3; instead, we issue the error that the given program is malformed.
 
 Note that a counterexample is only given when one or more (pre-invocation) values ($a_i$) and/or universally/existentially quantified variables appear in the (invalid) VC; 
-if this is not the case, the invalidity of the VC does not depend on these values/variables and \verb|Falsifiable.| is the only output given. 
+if this is not the case, the invalidity of the VC does not depend on these values/variables and \verb|Falsifiable| is the only output given. 
+
+\subsection{Examples}
+
+We have included some examples that illustrate the workings of our verifier. Those can be found in the \texttt{PV3/Examples} directory.
+
+\subsubsection{\texttt{Simple}}
+
+This is a very simple example. The program just returns 1:
+\begin{verbatim}
+int p () {
+  return 1;
+}
+\end{verbatim}
+The specification is:
+\\ \centerline{$pre: true$}
+\\ \centerline{$post: return == 1$}
+
+When we verify this example, the specification is indeed proven correct: \texttt{{Q.E.D.}} When we change the postcondition to
+\\ \centerline{$post: return == 0$}
+the output of the verifier becomes \texttt{Falsifiable}. As no pre-invocation values/variables appear in the VC, no counterexample is given.
+
+\subsubsection{\texttt{Assignment}}
+This is the example from the assignment:
+\begin{verbatim}
+int p (int a0, int a1) {
+  var x0 = 10;
+  if (a1+a2 == x0) 
+    return 1;
+  else 
+    return -1;
+}
+\end{verbatim}
+The specification is:
+\\ \centerline{$pre: true$}
+\\ \centerline{$post: (a_0+a_1 == 10) \leftrightarrow (return == 1)$}
+
+When we verify this example, the specification is indeed proven correct: \texttt{{Q.E.D.}} When we change the postcondition to
+\\ \centerline{$post: (a_0+a_1 == 11) \leftrightarrow (return == 1)$}
+the output of the verifier becomes: 
+\begin{verbatim}
+Falsifiable. Counter-example:
+  a0 = 10 :: SInteger
+  a1 = 0 :: SInteger
+\end{verbatim}
+Now pre-invocation values do appear in the VC: a counterexample is given.
 
 \section{`Return from anywhere' extension} \label{sec:returnanywhere}
+
+In the base task, a return instruction could only appear as the last instruction in a program. In this extension we will remove this restriction.
+
+\subsection{Updated WP rules}
+
+The extension is quite simple: We give to each statement/instruction not only a(n intermediate) WP, but also the program body's postcondition input, 
+``given'' by the program WP rule; this postcondition is identical to the postcondition from the specification, apart from the additional $T == -1$ conjunct (see Section
+\ref{sec:wprules}). The return instruction always uses the body's postcondition; the other instructies use the ``normal'' (intermediate) WP, as was the case in the base task.
+
+The return instruction WP rule is thus updated to:
+\semwprule{return}
+{return := stack_T; T := T-1}
+{(Q[T-1/T])[stack_T/return] \wedge T >= 0}
+
 
 \section{Bounded verification extension} \label{sec:bounded}
 

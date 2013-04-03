@@ -1,10 +1,25 @@
 {- |
 Example that squares the first (int) parameter.
 
+Pseudo-Java:
+int P (int a0) {
+  var x0 = 0;
+  var x1 = 0;
+  x1 = a0;
+  while (x1 > 0) {
+    x0 = x0 + a0;
+    x1 = x1 - 1;
+  }
+  return x0;
+}
+
+Pre:  a0 >= 0
+Post: return == a0*a0
+
 Part of PV - Project 3.
 
 Authors: Jaap van der Plas and Danny Bergsma
-Version: 0.1, 2 April 2013
+Version: 0.1, 3 April 2013
 -}
 
 module PV3.Examples.Bounded where
@@ -39,5 +54,6 @@ program = Program 1 2 body
                        
 postcondition :: Cond
 postcondition = CEQ IReturnValue (IMul (IParamOld 0) (IParamOld 0))
+
 precondition :: Cond
 precondition = (IParamOld 0) `CGTE` (ILit 0)

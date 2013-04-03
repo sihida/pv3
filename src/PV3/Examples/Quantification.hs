@@ -1,6 +1,14 @@
 {- |
 Example that uses (existential) quantification.
 
+Pseudo-Java:
+int p (int a) {
+  return a;
+}
+
+Pre:  6 <= a <= 10
+Post: E 6 <= x <= 10: return == x
+
 Part of PV - Project 3.
 
 Authors: Jaap van der Plas and Danny Bergsma

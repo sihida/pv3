@@ -1,10 +1,22 @@
 {- |
 Example from assignment, slightly altered to test the `return from anywhere' extension.
 
+Pseudo-Java:
+int p (int a0, int a1) {
+  var x0 = 10;
+  if (a0+a1 == x0) 
+    return 1;
+  return -1;
+  return 1;
+}
+
+Pre:  true
+Post: (a0 + a1 == 10) <==> (return == 1)
+
 Part of PV - Project 3.
 
 Authors: Jaap van der Plas and Danny Bergsma
-Version: 0.1, 2 April 2013
+Version: 0.1, 3 April 2013
 -}
 
 module PV3.Examples.ReturnFromAnywhere where
