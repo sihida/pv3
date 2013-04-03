@@ -1,37 +1,37 @@
 {- |
 Example that squares the first (int) parameter, using two outer loops and one inner loop.
 
+int p(int a0) {
+  var x0 = 0;
+  var x1 = a0;
+  while (x1 > 0) {
+    while (x0 < a0) {
+      x0 = x0 + x0;
+    }
+    x1--;
+  }
+  x1 = 0;
+  var x2 = 0;
+  while (x1 < 1) {
+    x2 = x0 + x2;
+    x1 = x1 + 1;
+  }
+  return x2;
+}
+
+Pre:  a0 >= 0
+Post: return == a0*a0
+
 Part of PV - Project 3.
 
 Authors: Jaap van der Plas and Danny Bergsma
-Version: 0.1, 2 April 2013
+Version: 0.1, 3 April 2013
 -}
-
 module PV3.Examples.Bounded4 where
 
 import PV3.Condition.ConditionAST
 import PV3.Program.ProgramAST
 
-{- | A Java-like equivalent of this program would be:
-
-  prog P(a0) {
-    var x0 = 0;
-    var x1 = a0;
-    while (x1 > 0) {
-      while (x0 < a0) {
-        x0 = x0 + x0;
-      }
-      x1--;
-    }
-    x1 = 0;
-    var x2 = 0;
-    while (x1 < 1) {
-      x2 = x0 + x2;
-      x1 = x1 + 1;
-    }
-    return x2;
-  }
--}
 body :: StatementList
 body = [SInstruction (InstSetLocal  0 (LInt 0)),                             -- local0 := 0
         SInstruction (InstSetLocal  1 (LInt 0)),                             -- local1 := 0
