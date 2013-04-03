@@ -20,7 +20,7 @@ program :: Program
 program = Program 2 1 body
                        
 postcondition :: Cond
-postcondition = CExistQuant "x" (CImplies (CAnd (CGTE (IVarName "x") (ILit 6)) (CLTE (IVarName "x") (ILit 10))) (CEQ IReturnValue (IVarName "x")))       
+postcondition = CExistQuant "x" (CAnd (CAnd (CGTE (IVarName "x") (ILit 6)) (CLTE (IVarName "x") (ILit 10))) (CEQ IReturnValue (IVarName "x")))       
 
 precondition :: Cond
 precondition = CAnd (CGTE (IParamOld 0) (ILit 6)) (CLTE (IParamOld 0) (ILit 10))

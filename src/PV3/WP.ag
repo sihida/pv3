@@ -29,7 +29,7 @@ attr Statement Instruction StatementList
   syn copy                :: self  -- ^ Used in the SWhileTrue rule for @lhs.wp to get a copy (of type [Statement]) of the trueBranch.
   
 attr Program Instruction Statement
-  syn length              :: Int  -- ^ #instructions (steps) of this instruction/statement. Used for bounded verification.
+  syn length              :: Int  -- ^ #instructions (steps) of this instruction/statement/program. Used for bounded verification.
     
 attr StatementList
   syn length use {+} {0}  :: Int  -- ^ #instructions (steps) of all statements/instructions in hd + tl (i.e. the full (sub)list). Used for bounded verification.
