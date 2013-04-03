@@ -22,7 +22,7 @@ A. References
 * Gives an counterexample when the specification cannot be proven correct (only if one or more variables appear in the VC).
 * Return from anywhere extension.
 * Bounded verification (loops) extension: verifies executions up to PV3.WP.bound instructions.
-  * Gives an error when # instructions of a program (with zero iterations for all loops) > PV3.WP.bound.
+  * Gives an error when # instructions of a program (with zero iterations for all loops) > PV3.WP.bound (no path/execution possible).
 * Gives an error when program is malformed, i.e. no precondition - postcondition combination could be proven correct.
 * Gives an error when in the pre- and/or postcondition parameters are used in a boolean *and* int context.
 * Gives an error when in the pre- and/or postcondition a variable is not quantified, nor a return value or pre-invocation parameter value.

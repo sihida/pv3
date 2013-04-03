@@ -7,4 +7,6 @@ cabal-dev
 *.log
 *.aux
 *.tex
+*.out
+*.ptb
 .virthualenv

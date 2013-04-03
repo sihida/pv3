@@ -1,5 +1,5 @@
 {- |
-Attribute grammar for defining the datatypes used for conditions programs.
+Attribute grammar for defining the datatypes used for programs.
 
 Part of PV - Project 3.
 
