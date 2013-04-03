@@ -25,7 +25,13 @@ import PV3.Program.ProgramAST
         x0++;
       }
     }
-    return x0;
+    x1 = 0;
+    var x2 = 0;
+    while (x1 < 1) {
+      x2 = x0 + x2;
+      x1 = x1 + 1;
+    }
+    return x2;
   }
 -}
 body :: StatementList
