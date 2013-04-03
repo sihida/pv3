@@ -12,6 +12,25 @@ module PV3.Examples.Bounded3 where
 import PV3.Condition.ConditionAST
 import PV3.Program.ProgramAST
 
+{- | A Java-like equivalent of this program would be:
+
+  prog P(a0) {
+    var x0 = 0;
+    var x1 = 0;
+    x1 = a1;
+    while (x1 > 0) {
+      x0 = x0 + a0;
+      x1 = x1 - 1;
+    }
+    x1 = 0;
+    var x2 = 0;
+    while (x1 < 1) {
+      x2 = x0 + x2;
+      x1 = x1 + 1;
+    }
+    return x2;
+  }
+-}
 body :: StatementList
 body = [SInstruction (InstSetLocal  0 (LInt 0)),
         SInstruction (InstSetLocal  1 (LInt 0)),
