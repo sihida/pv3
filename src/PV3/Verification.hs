@@ -34,8 +34,8 @@ import           Text.Printf
   -- Constants
 
 
--- | Upper bound for bounded verification.  
-bound = 100
+-- | Upper bound (# total instructions) for bounded verification.  
+bound = 150
 
 errorExceedsBound         = "All executions exceed upper bound, increase the upper bound"  
 errorInternal             = "Program incorrect, wp contains references to internal (stack) data"
