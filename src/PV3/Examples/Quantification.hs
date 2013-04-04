@@ -2,11 +2,11 @@
 Example that uses (existential) quantification.
 
 Pseudo-Java:
-int p (int a) {
-  return a;
+int p (int a0) {
+  return a0;
 }
 
-Pre:  6 <= a <= 10
+Pre:  6 <= a0 <= 10
 Post: E 6 <= x <= 10: return == x
 
 Part of PV - Project 3.

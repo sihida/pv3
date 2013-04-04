@@ -64,8 +64,7 @@ in Section \ref{sec:returnanywhere}; our bounded verification extension, to deal
 \section{Base task} \label{sec:basetask}
 
 This section presents our solution for the base task: designing and implementing a verification engine for a bytecode
-language. Section \ref{sec:programs} describes how we represent programs in this language; Section \ref{sec:conditions}
-describes how we represent specifications (pre- and postconditions) and convert them to the SBV format.
+language.
 
 For a more detailed description of the base task, we refer to the assignment \cite{assignment}.
 
@@ -101,13 +100,12 @@ data; this is useful for verification purposes, see Section \ref{sec:verificatio
 Universal and existential quantification can be used in conditions, but we doubt the usefulness. We included the example \texttt{PV3/\-Examples/\-Quantification.hs}. Its
 program's higher-level counterpart is:
 \begin{verbatim}
-int p (int a) {
-  return a;
+int p (int a0) {
+  return a0;
 }
 \end{verbatim}
 The specification for the example is:
-\pagebreak
-\\ \centerline{$pre: 6 \leq a \leq 10$}
+\\ \centerline{$pre: 6 \leq a_0 \leq 10$}
 \\ \centerline{$post: \exists \ 6 \leq x \leq 10: return == x$}
 
 When we verify this example, we indeed prove the specification correct: \texttt{{Q.E.D.}} When we change the postcondition to
@@ -237,6 +235,7 @@ The actual verification consists of these steps:
 \end{enumerate}
 
 The function
+\vspace{-1mm}
 \begin{code}
 verify :: Cond            -- Precondition of specification. 
        -> Program         -- Program of specification.
@@ -246,6 +245,7 @@ verify :: Cond            -- Precondition of specification.
 from \texttt{Verification.hs} drives the first part (the first six steps) of the verification; $verify$ is called by the $main$ function in \texttt{Main.hs}. 
 
 Consider the malformed program:
+\vspace{-1mm}
 \begin{verbatim}
 P (0) {
   return ;
@@ -308,23 +308,204 @@ Falsifiable. Counter-example:
 \end{verbatim}
 Now pre-invocation values do appear in the VC: a counterexample is given.
 
+When we we change the specification to
+\\ \centerline{$pre: a_0+a_1 == 10$}
+\\ \centerline{$post: return == 1$} \\
+the updated specification is also proven correct. But if you change the precondition back to the original one ($true$), we get an counterexample:
+\begin{verbatim}
+Falsifiable. Counter-example:
+  a0 = 11 :: SInteger
+  a1 = 0 :: SInteger
+\end{verbatim}
+
 \section{`Return from anywhere' extension} \label{sec:returnanywhere}
 
 In the base task, a return instruction could only appear as the last instruction in a program. In this extension we will remove this restriction.
 
 \subsection{Updated WP rules}
 
-The extension is quite simple: We give to each statement/instruction not only a(n intermediate) WP, but also the program body's postcondition input, 
+The extension is quite simple: We give to each statement/instruction not only a(n intermediate) WP, but also the program body's postcondition input 
 ``given'' by the program WP rule; this postcondition is identical to the postcondition from the specification, apart from the additional $T == -1$ conjunct (see Section
 \ref{sec:wprules}). The return instruction always uses the body's postcondition; the other instructies use the ``normal'' (intermediate) WP, as was the case in the base task.
 
-The return instruction WP rule is thus updated to:
-\semwprule{return}
-{return := stack_T; T := T-1}
-{(Q[T-1/T])[stack_T/return] \wedge T >= 0}
+The input to the WP rules is now a tuple: the first element ($Q$) the ``normal'' (intermediate) WP, the second element the body's postcondition.
+The output is now also a tuple: the first element the ``new'' (intermediate) WP, the second element is used to pass the body's postcondition to
+the ``next'' (previous) statement.
 
+The return instruction WP rule is updated to:
+\semwprulex{return}
+{return := stack_T; T := T-1}
+{((Q'[T-1/T])[stack_T/return] \wedge T >= 0, Q')}
+
+The rules for the other instructions remain the same, except it copies the body's postcondition $Q'$:
+\semwprulex{SETLOCAL $k$ $x$}
+{loc_k := x}
+{(Q[x/loc_k], Q')}
+
+\subsection{Examples}
+
+\subsubsection{\texttt{ReturnFromAnywhere}}
+This is the example from the assignment, slightly altered:
+\begin{verbatim}
+int p (int a0, int a1) {
+  var x0 = 10;
+  if (a0+a1 == x0) 
+    return 1;
+  return -1;
+  return 1;
+}
+\end{verbatim}
+The specification is:
+\\ \centerline{$pre: true$}
+\\ \centerline{$post: (a_0+a_1 == 10) \leftrightarrow (return == 1)$} \\
+Note that the last \texttt{return} statement is dead code. 
+
+When we verify this example, the specification is indeed proven correct: \texttt{{Q.E.D.}} When we change the postcondition to
+\\ \centerline{$post: (a_0+a_1 == 11) \leftrightarrow (return == 1)$}
+the output of the verifier becomes: 
+\begin{verbatim}
+Falsifiable. Counter-example:
+  a0 = 10 :: SInteger
+  a1 = 0 :: SInteger
+\end{verbatim}
+
+\subsubsection{\texttt{AnotherExample}}
+This example uses almost all instructions from the bytecode language. It also uses the `return from anywhere' extension:
+\begin{verbatim}
+int P(a0,a1) {
+  var x0 = 10;
+  var x1 = 10;
+  if (10 == 10)
+    x0 = 10;
+  else
+    x0 = 11;
+  a1 = a0 + 10;
+  if (a0 >= 10) {}
+  else 
+    return 0;
+  return a1 * 2;
+}
+\end{verbatim}
+The specification is:
+\\ \centerline{$pre: true$}
+\\ \centerline{$post: (a_0 \geq 10 \rightarrow return == (a_0 + 10) \times 2) \wedge (a_0 < 10 \rightarrow return == 0) $}
+
+When we verify this example, the specification is indeed proven correct: \texttt{{Q.E.D.}} When we change the postcondition to
+\\ \centerline{$post: (a_0 \geq 10 \rightarrow return == (a_0 + 10) \times 3) \wedge (a_0 < 10 \rightarrow return == 0) $}
+the output of the verifier becomes: 
+\begin{verbatim}
+Falsifiable. Counter-example:
+  a0 = 10 :: SInteger
+\end{verbatim}
 
 \section{Bounded verification extension} \label{sec:bounded}
+
+To verify programs with loops, you usually have to provide a loop invariant. This is not needed when you do bounded verification:
+you only verify executions whose number of instructions $\leq$ the (upper) bound. 
+
+\subsection{Updated WP calculation}
+
+We added a while-statement to \texttt{ProgramAST.ag}
+and added the while WP rules from the assignment \cite{assignment} to \texttt{WP.ag}. To verify all executions whose number
+of instructions does not exceed the bound, we determine all paths whose number of instructions does not exceed this bound. The path
+(and, consequently, number of instructions) depends on the number of iterations of each loop. So, we determine all ``loop iteration
+configurations'' that do not exceed the upper bound.
+
+To this end, we first calculates the number of loops, including inner ones, in our program. This is done by the attribute grammar
+\texttt{PV3/\-Program/\-NumberOfLoops.ag}. We then pass ``configurations'' to the \texttt{WP} AG, which returns the WP corresponding
+to this ``configuration''. The AG also returns the total number of instructions, which can then be compared to the bound. The implicit
+$pop$s in \texttt{if} and \texttt{while} statements are counted for one instruction. 
+
+We will demonstrate the generation of loop configurations with an example. Consider example \texttt{Bounded4}, which has two outer
+loops (L1 and L2) and one inner loop (L1-L1), and a bound of 30 instructions. The first configuration (L1, L1-L1, L2) we try, is (0, 0, 0): no loop is entered and the
+number of instructions is 16. This is smaller than the bound, so we need to consider this path. Then, we increase the last element in our configuration:
+(0, 0, 1); loop L2 is now entered exactly once. The \texttt{WP} AG returns 28 instructions, which is still smaller than 30, so we need
+to consider this path as well. To this end, we \texttt{AND} both WPs. (Note that this is not needed here, as the last WP ``incorporates'' the first WP.
+As this optimisation would make our implementation more complex, we decided to skip it.) We increase the last element again: (0, 0, 2). The corresponding number
+of instructions, 40, now exceeds the bound, so we will not consider this path. We also stop with increasing the last element, as the number
+of instructions would only become more larger than the bound.
+
+We now return to the original configuration (0, 0, 0) and increase the \emph{second} element: (0, 1, 0). The corresponding number of instructions, 16, is the same as
+the number of instructions corresponding to the configuration (0, 0, 0); as the outer loop L1 of the inner loop L1-L1 is never entered, the inner one is not
+``enabled'', so it makes no sense to increase L1-L1's iterations. Our generation algorithm remembers the ``previous'' length; if the ``new'' length is equal to
+the ``previous'' one, it detects a non-enabled inner loop and stops increasing the number of iterations for this inner loop.
+
+Consequently, we return to the original configuration (0, 0, 0) and increase the \emph{first} element: (1, 0, 0). The corresponding number of instructions, 28, is
+now \emph{not} the same as the number of instructions corresponding to the configuration (0, 0, 0). It is also smaller than the bound, so we \texttt{AND} this WP with
+the ones from (0, 0, 0) and (0, 0, 1). We now, again, increase the third element: (1, 0, 1). The corresponding number of instructions is now 40, larger than
+the bound, so we stop increasing the third element. We then increase the second element: (1, 1, 0). The corresponding number of instructions is now
+36, larger than the bound, so we stop increasing the second element. We now increase the first element: (2, 0, 0). The corresponding number of instructions is now
+40, again larger than the bound, so we stop increasing the first element. We are now done; the resulting WP consists of three ``sub-WPs'' and becomes the
+consequent in the VC.
+
+The function $driver$ in \texttt{Verification.hs} implements this rather complicated algorithm.
+
+If there is no path whose number of instructions is $\leq$ bound, we output an error.
+
+\subsection{Examples}
+
+\subsubsection{\texttt{Bounded}}
+
+This example squares its first argument:
+\begin{verbatim}
+int p (int a0) {
+  var x0 = 0;
+  var x1 = 0;
+  x1 = a0;
+  while (x1 > 0) {
+    x0 = x0 + a0;
+    x1 = x1 - 1;
+  }
+  return x0;
+}
+\end{verbatim}
+The specification is:
+\\ \centerline{$pre: a_0 \geq 0$}
+\\ \centerline{$post: return == a_0 \times a_0$} \\
+Note that this multiplication is done with addition, e.g. $5 \times 5$ is calculated by doing $5+5+5+5+5$.
+
+\pagebreak
+
+When we verify this example, the specification is indeed proven correct: \texttt{{Q.E.D.}} When we change the precondition to $true$, the verifier gives an counterexample:
+\begin{verbatim}
+Falsifiable. Counter-example:
+  a0 = -3 :: SInteger
+\end{verbatim}
+When $a_0$ is -3, the loop is never entered, so 0 is returned, which is not equal to $-3 \times -3 == 9$.
+
+\subsubsection{\texttt{Bounded2}}
+
+This example just returns its first argument, but uses a useless loop for this:
+\begin{verbatim}
+int p (int a0) {
+  var x0 = 0;
+  var x1 = 0;
+  while (x1 < 1) {
+    x0 = x0 + a0;
+    x1 = x1 + 1;
+  }
+  return x0;
+}
+\end{verbatim}
+The specification is:
+\\ \centerline{$pre: true$}
+\\ \centerline{$post: return == a_0$} \\
+When we verify this example, the specification is indeed proven correct: \texttt{{Q.E.D.}} When we change the postcondition to
+\\ \centerline{$post: return == 1$} \\
+the output of the verifier becomes: 
+\begin{verbatim}
+Falsifiable. Counter-example:
+  a0 = 2 :: SInteger
+\end{verbatim}
+But when we change the bound to $7 < bound < 20$ and run the verifier again, the specification is proven correct again: \texttt{{Q.E.D.}} This shows the limitations of bounded verification: 
+With the ``new'' bound, the only possible configuration is (0), i.e. the loop is never entered. But no execution is possible on this path: the condition's guard evaluates (the first time)
+to $0 < 1 == true$, so every execution should enter the loop at least once (and in this case, just once). As no execution is possible, the specification is ``vacuously true'': up to
+20 (not including) instructions every execution satisfies the specification, as there is no such an execution... When we change the bound to $\geq 20$ again, the configuration (1) and, consequently, an execution that does not satisfy the specification, is now possible; when we change the bound to $\leq 7$ the number of instructions of no path is $\leq$ bound, so an error is given.
+
+\subsubsection{\texttt{Bounded3}, \texttt{Bounded4}, \texttt{Bounded5}}
+
+These examples are variations on the \texttt{Bounded} and \texttt{Bounded2} examples and consist of multiple, including inner, loops. All can be proven correct and if you change the specification
+to an invalid one, you will get an counterexample. Verification may take a while, as with multiple loops, including inner ones, and a large bound, many paths are possible and need to be considered.
 
 \bibliographystyle{abbrv}
 \begin{thebibliography}{99}
