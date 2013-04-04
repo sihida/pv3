@@ -1,7 +1,7 @@
 {- |
 Example that uses most instructions and the control structures. The program multiplies its second argument by two.
 
-int P(a0,a1) {
+int p (int a0, int a1) {
   var x0 = 10;
   var x1 = 10;
   if (10 == 10)

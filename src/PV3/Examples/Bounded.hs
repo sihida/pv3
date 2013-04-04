@@ -2,7 +2,7 @@
 Example that squares the first (int) parameter.
 
 Pseudo-Java:
-int P (int a0) {
+int p (int a0) {
   var x0 = 0;
   var x1 = 0;
   x1 = a0;

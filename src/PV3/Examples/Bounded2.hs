@@ -2,7 +2,7 @@
 Example that just returns the first parameter, but uses a (useless) loop for this. To test bounded verification.
 
 Pseudo-Java:
-int P (int a0) {
+int p (int a0) {
   var x0 = 0;
   var x1 = 0;
   while (x1 < 1) {

@@ -50,10 +50,10 @@ respect to the given postcondition and program (we call this implication the ver
 the WP is calculated by subsequently applying the rules from the defined WP calculus (see Section \ref{sec:wprules}).
 We check the validity of the VC by converting it to Data.SBV \cite{sbv} format and subsequently calling 
 SBV's prove function; SBV interfaces with Microsoft's theorem prover (SMT solver) Z3 \cite{z3}. Z3/SBV returns whether
-the VC is valid or not; if the VC is invalid, Z3/SBV gives an counterexample.
+the VC is valid or not; if the VC is invalid, Z3/SBV gives a counterexample.
 
 We have implemented the verifier in Haskell, using attribute grammars \cite{ag}. This report will explain our solution 
-with emphasis on the conceptual ideas. For implementation details, we refer to the Haddock (HTML) documentation and 
+with emphasis on the conceptual ideas. For (more) implementation details, we refer to the Haddock (HTML) documentation and 
 the (documented) code. The included README elaborates on practical matters, like building and running the verifier, how to 
 test the included examples, et cetera. The README also lists all implemented features. 
 
@@ -73,7 +73,7 @@ For a more detailed description of the base task, we refer to the assignment \ci
 The assignment \cite{assignment} already contained a description of the syntax and semantics of the bytecode language.
 The representation in Haskell is straightforward; the file \texttt{PV3/\-Program/\-ProgramAST.ag} contains the defined AST.
 
-We decided that the type of parameters, local variables, literals and the return value is either \emph{bool} or \emph{int}. 
+We decided that the type of parameters, local variables, literals and return values is either \emph{bool} or \emph{int}. 
 To compare two \emph{bool}s, we added the new instruction EQUIV; we cannot use the existing EQ instruction, as our substitution
 implementation (Section \ref{sec:wprules}) needs to know the type of the terms $stack_{T}$ and $stack_{T-1}$ that are substituted for 
 the term $stack_{T}$ in the WP rule for EQ/EQUIV (see Section \ref{sec:wprules}). If we compare two \emph{bool}s, both terms would be
@@ -256,8 +256,8 @@ with as postcondition:
 \\ \centerline{$post: return == 2$}
 
 The weakest precondition with respect to this program and postcondition refers to $stack_T$, as the $return$ term in the postcondition is replaced with $stack_T$.
-This indicates that the program is malformed and no specification for the program can be proven correct. Every weakest precondition (and, consequently, VC), with
-respect to a given program, that refers to internal (stack) data indicates that the given program is malformed and that no specification for this program can be
+This indicates that the program is malformed and no (non-trivial) specification for the program can be proven correct. Every weakest precondition (and, consequently, VC), with
+respect to a given program, that refers to internal (stack) data indicates that the given program is malformed and that no (non-trivial) specification for this program can be
 proven correct. So, if the VC is not ``external'', we do not need to convert it to SBV and give it to Z3; instead, we issue the error that the given program is malformed.
 
 Note that a counterexample is only given when one or more (pre-invocation) values ($a_i$) and/or universally/existentially quantified variables appear in the (invalid) VC; 
@@ -311,7 +311,7 @@ Now pre-invocation values do appear in the VC: a counterexample is given.
 When we we change the specification to
 \\ \centerline{$pre: a_0+a_1 == 10$}
 \\ \centerline{$post: return == 1$} \\
-the updated specification is also proven correct. But if you change the precondition back to the original one ($true$), we get an counterexample:
+the updated specification is also proven correct. But if you change the precondition back to the original one ($true$), we get a counterexample:
 \begin{verbatim}
 Falsifiable. Counter-example:
   a0 = 11 :: SInteger
@@ -326,7 +326,7 @@ In the base task, a return instruction could only appear as the last instruction
 
 The extension is quite simple: We give to each statement/instruction not only a(n intermediate) WP, but also the program body's postcondition input 
 ``given'' by the program WP rule; this postcondition is identical to the postcondition from the specification, apart from the additional $T == -1$ conjunct (see Section
-\ref{sec:wprules}). The return instruction always uses the body's postcondition; the other instructies use the ``normal'' (intermediate) WP, as was the case in the base task.
+\ref{sec:wprules}). The return instruction always uses the body's postcondition; the other instructions use the ``normal'' (intermediate) WP, as was the case in the base task.
 
 The input to the WP rules is now a tuple: the first element ($Q$) the ``normal'' (intermediate) WP, the second element the body's postcondition.
 The output is now also a tuple: the first element the ``new'' (intermediate) WP, the second element is used to pass the body's postcondition to
@@ -372,7 +372,7 @@ Falsifiable. Counter-example:
 \subsubsection{\texttt{AnotherExample}}
 This example uses almost all instructions from the bytecode language. It also uses the `return from anywhere' extension:
 \begin{verbatim}
-int P(a0,a1) {
+int p (int a0, int a1) {
   var x0 = 10;
   var x1 = 10;
   if (10 == 10)
@@ -414,7 +414,7 @@ configurations'' that do not exceed the upper bound.
 To this end, we first calculates the number of loops, including inner ones, in our program. This is done by the attribute grammar
 \texttt{PV3/\-Program/\-NumberOfLoops.ag}. We then pass ``configurations'' to the \texttt{WP} AG, which returns the WP corresponding
 to this ``configuration''. The AG also returns the total number of instructions, which can then be compared to the bound. The implicit
-$pop$s in \texttt{if} and \texttt{while} statements are counted for one instruction. 
+\texttt{POP}s in \texttt{if} and \texttt{while} statements are counted for one instruction. 
 
 We will demonstrate the generation of loop configurations with an example. Consider example \texttt{Bounded4}, which has two outer
 loops (L1 and L2) and one inner loop (L1-L1), and a bound of 30 instructions. The first configuration (L1, L1-L1, L2) we try, is (0, 0, 0): no loop is entered and the
@@ -475,7 +475,7 @@ When $a_0$ is -3, the loop is never entered, so 0 is returned, which is not equa
 
 \subsubsection{\texttt{Bounded2}}
 
-This example just returns its first argument, but uses a useless loop for this:
+This example just returns its first argument, but uses a loop for this:
 \begin{verbatim}
 int p (int a0) {
   var x0 = 0;
@@ -500,7 +500,7 @@ Falsifiable. Counter-example:
 But when we change the bound to $7 < bound < 20$ and run the verifier again, the specification is proven correct again: \texttt{{Q.E.D.}} This shows the limitations of bounded verification: 
 With the ``new'' bound, the only possible configuration is (0), i.e. the loop is never entered. But no execution is possible on this path: the condition's guard evaluates (the first time)
 to $0 < 1 == true$, so every execution should enter the loop at least once (and in this case, just once). As no execution is possible, the specification is ``vacuously true'': up to
-20 (not including) instructions every execution satisfies the specification, as there is no such an execution... When we change the bound to $\geq 20$ again, the configuration (1) and, consequently, an execution that does not satisfy the specification, is now possible; when we change the bound to $\leq 7$ the number of instructions of no path is $\leq$ bound, so an error is given.
+20 (not including) instructions every execution satisfies the specification, as there is no such an execution... When we change the bound to $\geq 20$ again, the configuration (1) and, consequently, an execution that does not satisfy the specification, is now possible; when we change the bound to $\leq 7$, the number of instructions of no path is $\leq$ bound, so an error is given.
 
 \subsubsection{\texttt{Bounded3}, \texttt{Bounded4}, \texttt{Bounded5}}
 
