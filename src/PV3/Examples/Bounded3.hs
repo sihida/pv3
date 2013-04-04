@@ -34,12 +34,6 @@ module PV3.Examples.Bounded3 where
 import PV3.Condition.ConditionAST
 import PV3.Program.ProgramAST
 
-{- | A Java-like equivalent of this program would be:
-
-  prog P(a0) {
-   
-  }
--}
 body :: StatementList
 body = [SInstruction (InstSetLocal  0 (LInt 0)),
         SInstruction (InstSetLocal  1 (LInt 0)),
